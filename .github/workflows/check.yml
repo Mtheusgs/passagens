@@ -1,0 +1,23 @@
+name: check
+on:
+  schedule: [{ cron: '0 */8 * * *' }] # 3x/dia ≈ 90 buscas/mês, cabe no free da SerpApi
+  workflow_dispatch:
+permissions: { contents: write }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install
+      - run: node check.mjs
+        env:
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          PUSH_SUB: ${{ secrets.PUSH_SUB }}
+          VAPID_SUBJECT: https://github.com/${{ github.repository }}
+      - run: |
+          # commita como você: a Vercel (plano Hobby) só faz deploy de commits de membros do time
+          git config user.name "${{ github.actor }}" && git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+          git commit -am "preço" && git push || true

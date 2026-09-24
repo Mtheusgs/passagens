@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Passagens</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#DCE7EA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1A29" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ceu: #DCE7EA; --papel: #EEF4F5; --tinta: #0F2238; --apagado: #4F6272; --linha: #B9CBD1;
+    --ipe: #E8A900; --mata: #17684A; --minerio: #9A3412;
+    --display: 'Big Shoulders Display', 'Arial Narrow', sans-serif;
+    --texto: 'Instrument Sans', system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ceu: #0D1A29; --papel: #13243A; --tinta: #E4EDF1; --apagado: #93A5B3; --linha: #28405A;
+      --ipe: #F5C02E; --mata: #4CC08C; --minerio: #E7895F; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ceu); color: var(--tinta); font: 400 1rem/1.5 var(--texto);
+    padding: max(20px, env(safe-area-inset-top)) 16px 48px; }
+  main { max-width: 440px; margin: 0 auto; }
+
+  /* rota: o destaque da página */
+  .rota { display: block; width: 100%; height: auto; overflow: visible; }
+  .rota text { fill: var(--tinta); }
+  .codigo { font: 800 88px/1 var(--display); letter-spacing: -.01em; }
+  .cidade { font: 600 17px var(--texto); }
+  .data { font: 400 14px var(--texto); fill: var(--apagado) !important; }
+  .preco { font: 800 78px/1 var(--display); font-variant-numeric: tabular-nums; }
+  .legenda { font: 400 14px var(--texto); fill: var(--apagado) !important; }
+  .trilha { fill: none; stroke: var(--apagado); stroke-width: 2; stroke-dasharray: 1 7; stroke-linecap: round; }
+  .feito { fill: none; stroke: var(--ipe); stroke-width: 3; stroke-linecap: round; }
+  .aviao { fill: var(--ipe); }
+
+  .veredito { font: 600 1.25rem/1.35 var(--texto); margin: 8px 0 4px; display: flex; gap: 10px; align-items: baseline; }
+  .veredito::before { content: ''; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--apagado); transform: translateY(1px); }
+  .veredito[data-estado=bom]::before { background: var(--mata); }
+  .veredito[data-estado=acima]::before { background: var(--minerio); }
+  .sub { color: var(--apagado); margin: 0 0 0 22px; }
+
+  section { margin-top: 44px; }
+  h2 { font: 800 1.9rem/1 var(--display); margin: 0 0 12px; }
+  p { margin: 0 0 12px; max-width: 60ch; }
+
+  .grafico { position: relative; }
+  .grafico svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+  .grafico .serie { fill: none; stroke: var(--tinta); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .grafico .limite { stroke: var(--mata); stroke-width: 1.5; stroke-dasharray: 6 5; }
+  .grafico .zona { fill: var(--mata); opacity: .08; }
+  .grafico text { font: 400 12px var(--texto); fill: var(--apagado); font-variant-numeric: tabular-nums; }
+  .grafico .menor { fill: var(--mata); stroke: var(--ceu); stroke-width: 2; }
+  .grafico .mira { stroke: var(--apagado); stroke-width: 1; }
+  .grafico .ponto { fill: var(--tinta); stroke: var(--ceu); stroke-width: 2; }
+  .dica { position: absolute; top: -8px; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap;
+    background: var(--tinta); color: var(--ceu); padding: 6px 10px; border-radius: 6px; font-size: .85rem; }
+  .dica b { display: block; font: 800 1.2rem/1.1 var(--display); }
+
+  button { font: 600 1rem var(--texto); color: var(--ceu); background: var(--tinta); border: 0; border-radius: 999px;
+    padding: 12px 22px; cursor: pointer; }
+  button:disabled { opacity: .45; cursor: default; }
+  :focus-visible { outline: 3px solid var(--ipe); outline-offset: 3px; }
+  textarea { width: 100%; height: 110px; margin: 4px 0 10px; padding: 10px; border: 1px solid var(--linha); border-radius: 8px;
+    background: var(--papel); color: var(--tinta); font: 12px/1.4 ui-monospace, monospace; resize: vertical; }
+
+  details summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  td { padding: 8px 0; border-bottom: 1px solid var(--linha); }
+  td:first-child { color: var(--apagado); }
+  td:last-child { text-align: right; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <svg class="rota" id="rota" viewBox="0 0 400 470" role="img" aria-labelledby="rota-desc">
+    <desc id="rota-desc">Carregando rota…</desc>
+    <text class="codigo" x="-4" y="72" id="o-cod"></text>
+    <text class="cidade" x="0" y="102" id="o-nome"></text>
+    <text class="data" x="0" y="124" id="o-data"></text>
+    <path class="trilha" id="arco" d="M150 58 C330 58 380 200 356 334"/>
+    <path class="feito" id="feito" d=""/>
+    <circle cx="150" cy="58" r="5" fill="var(--tinta)"/>
+    <circle cx="356" cy="334" r="6" fill="none" stroke="var(--tinta)" stroke-width="2"/>
+    <path class="aviao" id="aviao" d="M0-100C10-100 16-88 16-72V-24L100 24V48L16 24V64L40 82V98L0 88-40 98V82L-16 64V24L-100 48V24L-16-24V-72C-16-88-10-100 0-100Z"/>
+    <text class="preco" x="-3" y="290" id="preco">R$ –</text>
+    <text class="legenda" x="0" y="316">ida e volta, por pessoa</text>
+    <text class="codigo" x="404" y="418" text-anchor="end" id="d-cod"></text>
+    <text class="cidade" x="400" y="446" text-anchor="end" id="d-nome"></text>
+    <text class="data" x="400" y="468" text-anchor="end" id="d-data"></text>
+  </svg>
+
+  <p class="veredito" id="veredito" aria-live="polite">Carregando preços…</p>
+  <p class="sub" id="sub"></p>
+
+  <section id="sec-grafico" hidden>
+    <h2>Como o preço andou</h2>
+    <div class="grafico" id="grafico"></div>
+  </section>
+
+  <section>
+    <h2>Avisos no celular</h2>
+    <p id="aviso-txt"></p>
+    <button id="ativar">Ativar avisos</button>
+    <div id="passo" hidden>
+      <p style="margin-top:16px">Falta um passo: copie o código abaixo e salve no GitHub como o secret <b>PUSH_SUB</b>.</p>
+      <textarea id="codigo" readonly aria-label="Código de inscrição dos avisos"></textarea>
+      <button id="copiar">Copiar código</button>
+    </div>
+  </section>
+
+  <section id="sec-hist" hidden>
+    <details>
+      <summary id="hist-titulo"></summary>
+      <table><tbody id="hist"></tbody></table>
+    </details>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id)
+const brl = v => 'R$ ' + v.toLocaleString('pt-BR')
+const dia = d => {
+  const x = new Date(d + 'T12:00')
+  return `${x.toLocaleDateString('pt-BR', { weekday: 'long' }).split('-')[0]}, ${x.getDate()} de ${x.toLocaleDateString('pt-BR', { month: 'long' })}`
+}
+const rtf = new Intl.RelativeTimeFormat('pt-BR', { numeric: 'auto' })
+const ha = t => {
+  const min = Math.round((new Date(t) - Date.now()) / 60000)
+  return Math.abs(min) < 60 ? rtf.format(min, 'minute') : Math.abs(min) < 2880 ? rtf.format(Math.round(min / 60), 'hour') : rtf.format(Math.round(min / 1440), 'day')
+}
+const get = f => fetch(f, { cache: 'no-store' }).then(r => r.json())
+const NS = 'http://www.w3.org/2000/svg'
+const el = (tag, attrs, parent) => {
+  const e = document.createElementNS(NS, tag)
+  for (const k in attrs) e.setAttribute(k, attrs[k])
+  return parent ? parent.appendChild(e) : e
+}
+
+// avião voa pelo arco uma vez ao abrir; com movimento reduzido já aparece no lugar
+function voar() {
+  const arco = $('arco'), total = arco.getTotalLength(), parada = .6
+  $('feito').setAttribute('d', arco.getAttribute('d'))
+  const pos = p => {
+    const a = arco.getPointAtLength(total * p), b = arco.getPointAtLength(Math.min(total, total * p + 1))
+    const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 90
+    $('aviao').setAttribute('transform', `translate(${a.x} ${a.y}) rotate(${ang}) scale(.2)`)
+    $('feito').style.strokeDasharray = `${total * p} ${total}`
+  }
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return pos(parada)
+  const t0 = performance.now()
+  const passo = t => {
+    const k = Math.min(1, (t - t0) / 1800)
+    pos(parada * (1 - Math.pow(1 - k, 3)))
+    if (k < 1) requestAnimationFrame(passo)
+  }
+  requestAnimationFrame(passo)
+}
+
+function grafico(hist, limite) {
+  const W = 400, H = 190, T = 14, B = 24
+  const ts = hist.map(h => +new Date(h.t)), ps = hist.map(h => h.price)
+  const lo = Math.min(...ps, limite) * .96, hi = Math.max(...ps, limite) * 1.03
+  const x = t => ts.length < 2 ? W / 2 : (t - ts[0]) / (ts.at(-1) - ts[0]) * W
+  const y = p => T + (hi - p) / (hi - lo) * (H - T - B)
+  const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `Preço de ${brl(ps[0])} a ${brl(ps.at(-1))} em ${ps.length} checagens` })
+
+  el('rect', { class: 'zona', x: 0, y: y(limite), width: W, height: H - B - y(limite) }, svg)
+  el('line', { class: 'limite', x1: 0, x2: W, y1: y(limite), y2: y(limite) }, svg)
+  el('text', { x: W, y: y(limite) - 6, 'text-anchor': 'end' }, svg).textContent = `seu limite ${brl(limite)}`
+  el('polyline', { class: 'serie', points: hist.map((h, i) => `${x(ts[i])},${y(h.price)}`).join(' ') }, svg)
+
+  const iMin = ps.indexOf(Math.min(...ps)), lx = x(ts[iMin])
+  el('circle', { class: 'menor', cx: lx, cy: y(ps[iMin]), r: 5 }, svg)
+  el('text', { x: lx, y: y(ps[iMin]) + 20, 'text-anchor': lx < 60 ? 'start' : lx > W - 60 ? 'end' : 'middle' }, svg).textContent = `menor ${brl(ps[iMin])}`
+
+  const curta = t => new Date(t).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
+  el('text', { x: 0, y: H - 4 }, svg).textContent = curta(ts[0])
+  if (ts.length > 1) el('text', { x: W, y: H - 4, 'text-anchor': 'end' }, svg).textContent = curta(ts.at(-1))
+
+  const mira = el('line', { class: 'mira', y1: T, y2: H - B, visibility: 'hidden' }, svg)
+  const ponto = el('circle', { class: 'ponto', r: 5, visibility: 'hidden' }, svg)
+  const dica = document.createElement('div')
+  dica.className = 'dica'; dica.hidden = true
+  $('grafico').append(svg, dica)
+
+  const mostrar = e => {
+    const r = svg.getBoundingClientRect(), mx = (e.clientX - r.left) / r.width * W
+    let i = 0
+    ts.forEach((t, j) => { if (Math.abs(x(t) - mx) < Math.abs(x(ts[i]) - mx)) i = j })
+    mira.setAttribute('x1', x(ts[i])); mira.setAttribute('x2', x(ts[i]))
+    ponto.setAttribute('cx', x(ts[i])); ponto.setAttribute('cy', y(ps[i]))
+    mira.setAttribute('visibility', 'visible'); ponto.setAttribute('visibility', 'visible')
+    dica.hidden = false
+    dica.innerHTML = `<b>${brl(ps[i])}</b>${new Date(ts[i]).toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
+    dica.style.left = Math.max(60, Math.min(r.width - 60, x(ts[i]) / W * r.width)) + 'px'
+  }
+  svg.addEventListener('pointermove', mostrar)
+  svg.addEventListener('pointerdown', mostrar)
+  svg.addEventListener('pointerleave', () => { dica.hidden = true; mira.setAttribute('visibility', 'hidden'); ponto.setAttribute('visibility', 'hidden') })
+}
+
+const mostrarCodigo = s => { $('passo').hidden = false; $('codigo').value = JSON.stringify(s) }
+
+function avisos(cfg) {
+  const txt = $('aviso-txt'), btn = $('ativar')
+  txt.textContent = `Quando o preço cair abaixo de ${brl(cfg.precoMax)}, você recebe uma notificação neste aparelho, mesmo com o app fechado.`
+  if (!('PushManager' in window)) {
+    btn.disabled = true
+    txt.textContent += /iPhone|iPad/.test(navigator.userAgent)
+      ? ' No iPhone, primeiro adicione o app à tela de início (Compartilhar, depois Adicionar à Tela de Início) e abra por lá.'
+      : ' Este navegador não suporta avisos. Tente pelo Chrome.'
+    return
+  }
+  if (cfg.vapidPublicKey === 'COLE_AQUI') {
+    btn.disabled = true
+    txt.textContent += ' Antes, coloque a chave pública de avisos (vapidPublicKey) no config.json.'
+    return
+  }
+  navigator.serviceWorker.ready.then(r => r.pushManager.getSubscription()).then(s => {
+    if (s && Notification.permission === 'granted') { btn.textContent = 'Mostrar código de novo'; mostrarCodigo(s) }
+  })
+  btn.onclick = async () => {
+    if (await Notification.requestPermission() !== 'granted')
+      return txt.textContent = 'As notificações estão bloqueadas. Libere nas configurações do site e tente de novo.'
+    const reg = await navigator.serviceWorker.ready
+    const key = Uint8Array.from(atob(cfg.vapidPublicKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
+    mostrarCodigo(await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }))
+  }
+  $('copiar').onclick = async () => {
+    await navigator.clipboard.writeText($('codigo').value)
+    $('copiar').textContent = 'Código copiado'
+  }
+}
+
+navigator.serviceWorker?.register('sw.js')
+
+Promise.all([get('config.json'), get('prices.json')]).then(([cfg, hist]) => {
+  $('o-cod').textContent = cfg.origem; $('o-nome').textContent = cfg.origemNome; $('o-data').textContent = 'ida ' + dia(cfg.ida)
+  $('d-cod').textContent = cfg.destino; $('d-nome').textContent = cfg.destinoNome
+  $('d-data').textContent = cfg.volta ? 'volta ' + dia(cfg.volta) : 'só ida'
+  voar()
+  avisos(cfg)
+
+  const v = $('veredito')
+  if (!hist.length) {
+    v.textContent = 'Nenhuma checagem ainda.'
+    $('sub').textContent = 'O preço é buscado a cada 8 horas. Para buscar agora, rode o workflow "check" na aba Actions do GitHub.'
+    $('rota-desc').textContent = `${cfg.origemNome} para ${cfg.destinoNome}, ainda sem preço.`
+    return
+  }
+  const agora = hist.at(-1).price, antes = hist.at(-2)?.price, min = Math.min(...hist.map(h => h.price))
+  $('preco').textContent = brl(agora)
+  $('rota-desc').textContent = `${cfg.origemNome} para ${cfg.destinoNome}: ${brl(agora)} ida e volta.`
+  v.dataset.estado = agora <= cfg.precoMax ? 'bom' : 'acima'
+  v.textContent = agora > cfg.precoMax ? `Ainda ${brl(agora - cfg.precoMax)} acima do seu limite de ${brl(cfg.precoMax)}.`
+    : agora <= min ? 'Menor preço até agora e abaixo do seu limite. Bom momento pra comprar.'
+    : `Abaixo do seu limite de ${brl(cfg.precoMax)}.`
+  const mov = antes == null ? '' : agora < antes ? `Caiu ${brl(antes - agora)} desde a checagem anterior. `
+    : agora > antes ? `Subiu ${brl(agora - antes)} desde a checagem anterior. ` : 'Sem mudança desde a checagem anterior. '
+  $('sub').textContent = mov + 'Última checagem ' + ha(hist.at(-1).t) + '.'
+
+  $('sec-grafico').hidden = false
+  grafico(hist, cfg.precoMax)
+
+  $('sec-hist').hidden = false
+  $('hist-titulo').textContent = `Todas as checagens (${hist.length})`
+  for (const h of hist.slice().reverse())
+    $('hist').insertRow().innerHTML = `<td>${new Date(h.t).toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td><td>${brl(h.price)}</td>`
+})
+</script>
+</body>
+</html>

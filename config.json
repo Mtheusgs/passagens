@@ -1,0 +1,10 @@
+{
+  "origem": "BVB",
+  "origemNome": "Boa Vista",
+  "destino": "CNF",
+  "destinoNome": "Belo Horizonte",
+  "ida": "2027-02-07",
+  "volta": "2027-02-14",
+  "precoMax": 2000,
+  "vapidPublicKey": "BL8m9xfo8pcTbuPSnCO8xDugqMUezGG9Wq7VYzhQag3KhuR5QVkeEHHrnhjVhX8Qz1GZ7FMkk-SmcZEKEeWMDJ0"
+}
