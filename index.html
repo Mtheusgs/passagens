@@ -25,8 +25,11 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--ceu); color: var(--tinta); font: 400 1rem/1.5 var(--texto);
-    padding: max(20px, env(safe-area-inset-top)) 16px 48px; }
+    padding: max(20px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
+    -webkit-font-smoothing: antialiased; }
   main { max-width: 440px; margin: 0 auto; }
+  p { margin: 0; }
+  .num { font-variant-numeric: tabular-nums; }
 
   /* rota: o destaque da página */
   .rota { display: block; width: 100%; height: auto; overflow: visible; }
@@ -40,19 +43,22 @@
   .feito { fill: none; stroke: var(--ipe); stroke-width: 3; stroke-linecap: round; }
   .aviao { fill: var(--ipe); }
 
-  .veredito { font: 600 1.25rem/1.35 var(--texto); margin: 8px 0 4px; display: flex; gap: 10px; align-items: baseline; }
-  .veredito::before { content: ''; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--apagado); transform: translateY(1px); }
-  .veredito[data-estado=bom]::before { background: var(--mata); }
-  .veredito[data-estado=acima]::before { background: var(--minerio); }
-  .sub { color: var(--apagado); margin: 0 0 0 22px; }
+  /* veredito: a distância até o limite, em número */
+  .veredito { margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--tinta); }
+  .veredito h1 { font: 800 2.6rem/1 var(--display); margin: 0; color: var(--apagado); }
+  .veredito[data-estado=acima] h1 { color: var(--minerio); }
+  .veredito[data-estado=bom] h1 { color: var(--mata); }
+  .veredito .frase { font-weight: 600; font-size: 1.1rem; margin-top: 4px; }
+  .veredito .sub { color: var(--apagado); margin-top: 10px; }
 
-  section { margin-top: 44px; }
-  h2 { font: 800 1.9rem/1 var(--display); margin: 0 0 12px; }
-  p { margin: 0 0 12px; max-width: 60ch; }
+  section { margin-top: 48px; }
+  h2 { font: 800 1.9rem/1 var(--display); margin: 0 0 16px; }
+  .vazio { color: var(--apagado); }
 
   .grafico { position: relative; }
   .grafico svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
   .grafico .serie { fill: none; stroke: var(--tinta); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .grafico .base { stroke: var(--linha); stroke-width: 1; }
   .grafico .limite { stroke: var(--mata); stroke-width: 1.5; stroke-dasharray: 6 5; }
   .grafico .zona { fill: var(--mata); opacity: .08; }
   .grafico text { font: 400 12px var(--texto); fill: var(--apagado); font-variant-numeric: tabular-nums; }
@@ -62,31 +68,49 @@
   .dica { position: absolute; top: -8px; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap;
     background: var(--tinta); color: var(--ceu); padding: 6px 10px; border-radius: 6px; font-size: .85rem; }
   .dica b { display: block; font: 800 1.2rem/1.1 var(--display); }
-
-  button { font: 600 1rem var(--texto); color: var(--ceu); background: var(--tinta); border: 0; border-radius: 999px;
-    padding: 12px 22px; cursor: pointer; }
-  button:disabled { opacity: .45; cursor: default; }
-  :focus-visible { outline: 3px solid var(--ipe); outline-offset: 3px; }
-  form label { display: block; color: var(--apagado); margin-bottom: 6px; }
-  .campo { display: flex; align-items: baseline; gap: 6px; border-bottom: 2px solid var(--tinta); max-width: 240px; margin-bottom: 16px; }
-  .campo span { font: 800 2rem var(--display); }
-  input { font: inherit; color: var(--tinta); background: transparent; border: 0; width: 100%; padding: 4px 0; }
-  #novo-limite { font: 800 2.6rem/1.1 var(--display); font-variant-numeric: tabular-nums; }
-  #novo-limite:focus-visible { outline: none; }
-  .campo:focus-within { border-color: var(--ipe); }
-  #limite-msg { margin-top: 12px; color: var(--apagado); }
-  #limite-msg[data-estado=ok] { color: var(--mata); }
-  #limite-msg[data-estado=erro] { color: var(--minerio); }
-  textarea { width: 100%; height: 110px; margin: 4px 0 10px; padding: 10px; border: 1px solid var(--linha); border-radius: 8px;
-    background: var(--papel); color: var(--tinta); font: 12px/1.4 ui-monospace, monospace; resize: vertical; }
+  .nota { color: var(--apagado); font-size: .9rem; margin-top: 8px; }
 
   .lista { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--linha); }
-  .lista a { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; padding: 12px 0;
+  .lista li > * { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 12px; padding: 14px 0;
     border-bottom: 1px solid var(--linha); color: inherit; text-decoration: none; }
+  .lista .valor { display: flex; align-items: baseline; gap: 10px; }
   .lista b { font: 800 1.8rem/1 var(--display); font-variant-numeric: tabular-nums; }
+  .lista .delta { font-size: .85rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .lista .delta.caiu { color: var(--mata); }
+  .lista .delta.subiu { color: var(--minerio); }
+  .lista .delta.igual { color: var(--apagado); font-weight: 400; }
   .lista .quando { grid-column: 1; color: var(--apagado); font-size: .9rem; }
   .lista .ver { grid-row: 1 / 3; grid-column: 2; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
   .lista a:hover .ver { color: var(--mata); }
+  .mais-hist { margin-top: 16px; }
+
+  /* ajustes: o que você muda fica separado do que você lê */
+  .ajustes { background: var(--papel); border-radius: 20px; padding: 24px 20px; margin-top: 56px; }
+  .ajustes h2 { font-size: 1.6rem; margin-bottom: 6px; }
+  .ajustes > div + div { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--linha); }
+  .ajustes p { color: var(--apagado); margin-bottom: 16px; max-width: 60ch; }
+  .passo-valor { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .passo-valor label { flex: 1; display: flex; align-items: baseline; gap: 6px; border-bottom: 2px solid var(--tinta); min-width: 0; }
+  .passo-valor label:focus-within { border-color: var(--ipe); }
+  .passo-valor span { font: 800 1.8rem var(--display); }
+  #novo-limite { font: 800 2.6rem/1.1 var(--display); font-variant-numeric: tabular-nums; color: var(--tinta);
+    background: transparent; border: 0; width: 100%; min-width: 0; padding: 2px 0; -moz-appearance: textfield; }
+  #novo-limite::-webkit-inner-spin-button, #novo-limite::-webkit-outer-spin-button { -webkit-appearance: none; }
+  #novo-limite:focus-visible { outline: none; }
+  .redondo { width: 48px; height: 48px; padding: 0; flex: none; font: 600 1.5rem/1 var(--texto); }
+
+  button { font: 600 1rem var(--texto); color: var(--ceu); background: var(--tinta); border: 2px solid var(--tinta);
+    border-radius: 999px; padding: 11px 22px; cursor: pointer; }
+  button.leve { background: transparent; color: var(--tinta); }
+  button:disabled { opacity: .4; cursor: default; }
+  :focus-visible { outline: 3px solid var(--ipe); outline-offset: 3px; }
+  .msg { margin-top: 12px; color: var(--apagado); min-height: 1.5em; }
+  .msg[data-estado=ok] { color: var(--mata); font-weight: 600; }
+  .msg[data-estado=erro] { color: var(--minerio); font-weight: 600; }
+  textarea { width: 100%; height: 110px; margin: 4px 0 10px; padding: 10px; border: 1px solid var(--linha); border-radius: 8px;
+    background: var(--ceu); color: var(--tinta); font: 12px/1.4 ui-monospace, monospace; resize: vertical; }
+
+  footer { color: var(--apagado); font-size: .85rem; margin-top: 32px; text-align: center; }
 </style>
 </head>
 <body>
@@ -96,52 +120,66 @@
     <text class="codigo" x="-4" y="72" id="o-cod"></text>
     <text class="cidade" x="0" y="102" id="o-nome"></text>
     <text class="data" x="0" y="124" id="o-data"></text>
+    <text class="data" x="0" y="144" id="contagem"></text>
     <path class="trilha" id="arco" d="M150 58 C330 58 380 200 356 334"/>
     <path class="feito" id="feito" d=""/>
     <circle cx="150" cy="58" r="5" fill="var(--tinta)"/>
     <circle cx="356" cy="334" r="6" fill="none" stroke="var(--tinta)" stroke-width="2"/>
     <path class="aviao" id="aviao" d="M0-100C10-100 16-88 16-72V-24L100 24V48L16 24V64L40 82V98L0 88-40 98V82L-16 64V24L-100 48V24L-16-24V-72C-16-88-10-100 0-100Z"/>
-    <text class="preco" x="-3" y="290" id="preco">R$ –</text>
-    <text class="legenda" x="0" y="316">ida e volta, por pessoa</text>
+    <g id="bloco-preco">
+      <text class="preco" x="-3" y="290" id="preco">R$ –</text>
+      <text class="legenda" x="0" y="316" id="legenda">ida e volta, por pessoa</text>
+    </g>
     <text class="codigo" x="404" y="418" text-anchor="end" id="d-cod"></text>
     <text class="cidade" x="400" y="446" text-anchor="end" id="d-nome"></text>
     <text class="data" x="400" y="468" text-anchor="end" id="d-data"></text>
   </svg>
 
-  <p class="veredito" id="veredito" aria-live="polite">Carregando preços…</p>
-  <p class="sub" id="sub"></p>
+  <div class="veredito" id="veredito" aria-live="polite">
+    <h1 id="v-titulo">Carregando…</h1>
+    <p class="frase" id="v-frase"></p>
+    <p class="sub" id="v-sub"></p>
+  </div>
 
   <section id="sec-grafico" hidden>
     <h2>Como o preço andou</h2>
     <div class="grafico" id="grafico"></div>
+    <p class="nota" id="nota-grafico" hidden></p>
   </section>
 
   <section id="sec-hist" hidden>
     <h2>Últimos preços encontrados</h2>
     <ul class="lista" id="hist"></ul>
+    <button class="leve mais-hist" id="mais-hist" hidden></button>
   </section>
 
-  <section>
-    <h2>Seu limite</h2>
-    <form id="form-limite">
-      <label for="novo-limite">Avisar quando a passagem ficar abaixo de</label>
-      <div class="campo"><span aria-hidden="true">R$</span><input id="novo-limite" type="number" inputmode="numeric" min="100" max="50000" step="10" required></div>
-      <button id="salvar">Salvar limite</button>
-      <p id="limite-msg" role="status"></p>
-    </form>
-  </section>
-
-  <section>
-    <h2>Avisos no celular</h2>
-    <p id="aviso-txt"></p>
-    <button id="ativar">Ativar avisos</button>
-    <div id="passo" hidden>
-      <p style="margin-top:16px">Falta um passo: copie o código abaixo e salve no GitHub como o secret <b>PUSH_SUB</b>.</p>
-      <textarea id="codigo" readonly aria-label="Código de inscrição dos avisos"></textarea>
-      <button id="copiar">Copiar código</button>
+  <div class="ajustes">
+    <div>
+      <h2>Seu limite</h2>
+      <p>Você recebe um aviso quando a passagem ficar abaixo deste valor.</p>
+      <form id="form-limite">
+        <div class="passo-valor">
+          <button type="button" class="leve redondo" id="menos" aria-label="Diminuir R$ 50">−</button>
+          <label><span aria-hidden="true">R$</span><input id="novo-limite" type="number" inputmode="numeric" min="100" max="50000" step="10" required aria-label="Limite em reais"></label>
+          <button type="button" class="leve redondo" id="mais" aria-label="Aumentar R$ 50">+</button>
+        </div>
+        <button id="salvar" disabled>Salvar limite</button>
+        <p class="msg" id="limite-msg" role="status"></p>
+      </form>
     </div>
-  </section>
+    <div>
+      <h2>Avisos no celular</h2>
+      <p id="aviso-txt">Quando o preço cair abaixo do seu limite, você recebe uma notificação neste aparelho, mesmo com o app fechado.</p>
+      <button id="ativar">Ativar avisos</button>
+      <div id="passo" hidden>
+        <p style="margin-top:20px">Falta um passo: copie o código abaixo e salve no GitHub como o secret <b>PUSH_SUB</b>.</p>
+        <textarea id="codigo" readonly aria-label="Código de inscrição dos avisos"></textarea>
+        <button id="copiar" class="leve">Copiar código</button>
+      </div>
+    </div>
+  </div>
 
+  <footer id="rodape"></footer>
 </main>
 
 <script>
@@ -156,6 +194,7 @@ const ha = t => {
   const min = Math.round((new Date(t) - Date.now()) / 60000)
   return Math.abs(min) < 60 ? rtf.format(min, 'minute') : Math.abs(min) < 2880 ? rtf.format(Math.round(min / 60), 'hour') : rtf.format(Math.round(min / 1440), 'day')
 }
+const quando = t => new Date(t).toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const get = f => fetch(f, { cache: 'no-store' }).then(r => r.json())
 const NS = 'http://www.w3.org/2000/svg'
 const el = (tag, attrs, parent) => {
@@ -164,7 +203,7 @@ const el = (tag, attrs, parent) => {
   return parent ? parent.appendChild(e) : e
 }
 
-// avião voa pelo arco uma vez ao abrir; com movimento reduzido já aparece no lugar
+// avião voa pelo arco uma vez ao abrir e o preço aparece quando ele chega; com movimento reduzido já fica tudo no lugar
 function voar() {
   const arco = $('arco'), total = arco.getTotalLength(), parada = .6
   $('feito').setAttribute('d', arco.getAttribute('d'))
@@ -173,8 +212,10 @@ function voar() {
     const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI + 90
     $('aviao').setAttribute('transform', `translate(${a.x} ${a.y}) rotate(${ang}) scale(.2)`)
     $('feito').style.strokeDasharray = `${total * p} ${total}`
+    $('bloco-preco').style.opacity = Math.max(0, Math.min(1, (p / parada - .45) * 2.2))
   }
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return pos(parada)
+  pos(0)
   const t0 = performance.now()
   const passo = t => {
     const k = Math.min(1, (t - t0) / 1800)
@@ -182,28 +223,39 @@ function voar() {
     if (k < 1) requestAnimationFrame(passo)
   }
   requestAnimationFrame(passo)
+  setTimeout(() => pos(parada), 2200) // garante o estado final se o navegador pausar a animação
 }
 
 function grafico(hist, limite) {
-  const W = 400, H = 190, T = 14, B = 24
+  const W = 400, H = 180, T = 14, B = 24
   const ts = hist.map(h => +new Date(h.t)), ps = hist.map(h => h.price)
-  const lo = Math.min(...ps, limite) * .96, hi = Math.max(...ps, limite) * 1.03
-  const x = t => ts.length < 2 ? W / 2 : (t - ts[0]) / (ts.at(-1) - ts[0]) * W
+  // escala só dos preços (com folga); o limite entra se estiver perto, senão vira uma nota
+  const pMin = Math.min(...ps), pMax = Math.max(...ps), folga = Math.max((pMax - pMin) * .2, pMax * .04)
+  let lo = pMin - folga, hi = pMax + folga
+  const limiteDentro = limite >= lo - folga * 2 && limite <= hi + folga * 2
+  if (limiteDentro) { lo = Math.min(lo, limite - folga / 2); hi = Math.max(hi, limite + folga / 2) }
+  const x = t => (t - ts[0]) / (ts.at(-1) - ts[0] || 1) * W
   const y = p => T + (hi - p) / (hi - lo) * (H - T - B)
   const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', 'aria-label': `Preço de ${brl(ps[0])} a ${brl(ps.at(-1))} em ${ps.length} checagens` })
 
-  el('rect', { class: 'zona', x: 0, y: y(limite), width: W, height: H - B - y(limite) }, svg)
-  el('line', { class: 'limite', x1: 0, x2: W, y1: y(limite), y2: y(limite) }, svg)
-  el('text', { x: 0, y: y(limite) - 6 }, svg).textContent = `seu limite ${brl(limite)}`
-  el('polyline', { class: 'serie', points: hist.map((h, i) => `${x(ts[i])},${y(h.price)}`).join(' ') }, svg)
+  el('line', { class: 'base', x1: 0, x2: W, y1: H - B, y2: H - B }, svg)
+  if (limiteDentro) {
+    el('rect', { class: 'zona', x: 0, y: y(limite), width: W, height: Math.max(0, H - B - y(limite)) }, svg)
+    el('line', { class: 'limite', x1: 0, x2: W, y1: y(limite), y2: y(limite) }, svg)
+    el('text', { x: 0, y: y(limite) - 6 }, svg).textContent = `seu limite ${brl(limite)}`
+  }
+  $('nota-grafico').hidden = limiteDentro
+  $('nota-grafico').textContent = limite < lo ? `Seu limite de ${brl(limite)} fica abaixo de todos os preços vistos até agora.` : `Todos os preços vistos até agora estão abaixo do seu limite de ${brl(limite)}.`
 
-  const iMin = ps.indexOf(Math.min(...ps)), lx = x(ts[iMin])
-  el('circle', { class: 'menor', cx: lx, cy: y(ps[iMin]), r: 5 }, svg)
-  el('text', { x: lx, y: y(ps[iMin]) + 20, 'text-anchor': lx < 60 ? 'start' : lx > W - 60 ? 'end' : 'middle' }, svg).textContent = `menor ${brl(ps[iMin])}`
+  el('polyline', { class: 'serie', points: hist.map((h, i) => `${x(ts[i])},${y(h.price)}`).join(' ') }, svg)
+  const iMin = ps.lastIndexOf(pMin), lx = x(ts[iMin])
+  el('circle', { class: 'menor', cx: lx, cy: y(pMin), r: 5 }, svg)
+  if (pMin < pMax)
+    el('text', { x: lx, y: y(pMin) + 20, 'text-anchor': lx < 60 ? 'start' : lx > W - 60 ? 'end' : 'middle' }, svg).textContent = `menor ${brl(pMin)}`
 
   const curta = t => new Date(t).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
   el('text', { x: 0, y: H - 4 }, svg).textContent = curta(ts[0])
-  if (ts.length > 1) el('text', { x: W, y: H - 4, 'text-anchor': 'end' }, svg).textContent = curta(ts.at(-1))
+  if (curta(ts[0]) !== curta(ts.at(-1))) el('text', { x: W, y: H - 4, 'text-anchor': 'end' }, svg).textContent = curta(ts.at(-1))
 
   const mira = el('line', { class: 'mira', y1: T, y2: H - B, visibility: 'hidden' }, svg)
   const ponto = el('circle', { class: 'ponto', r: 5, visibility: 'hidden' }, svg)
@@ -219,98 +271,75 @@ function grafico(hist, limite) {
     ponto.setAttribute('cx', x(ts[i])); ponto.setAttribute('cy', y(ps[i]))
     mira.setAttribute('visibility', 'visible'); ponto.setAttribute('visibility', 'visible')
     dica.hidden = false
-    dica.innerHTML = `<b>${brl(ps[i])}</b>${new Date(ts[i]).toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}`
-    dica.style.left = Math.max(60, Math.min(r.width - 60, x(ts[i]) / W * r.width)) + 'px'
+    dica.innerHTML = `<b>${brl(ps[i])}</b>${hist[i].cia ? hist[i].cia + ', ' : ''}${quando(ts[i])}`
+    dica.style.left = Math.max(70, Math.min(r.width - 70, x(ts[i]) / W * r.width)) + 'px'
   }
   svg.addEventListener('pointermove', mostrar)
   svg.addEventListener('pointerdown', mostrar)
   svg.addEventListener('pointerleave', () => { dica.hidden = true; mira.setAttribute('visibility', 'hidden'); ponto.setAttribute('visibility', 'hidden') })
 }
 
-const mostrarCodigo = s => { $('passo').hidden = false; $('codigo').value = JSON.stringify(s) }
-
-function avisos(cfg) {
-  const txt = $('aviso-txt'), btn = $('ativar')
-  txt.textContent = 'Quando o preço cair abaixo do seu limite, você recebe uma notificação neste aparelho, mesmo com o app fechado.'
-  if (!('PushManager' in window)) {
-    btn.disabled = true
-    txt.textContent += /iPhone|iPad/.test(navigator.userAgent)
-      ? ' No iPhone, primeiro adicione o app à tela de início (Compartilhar, depois Adicionar à Tela de Início) e abra por lá.'
-      : ' Este navegador não suporta avisos. Tente pelo Chrome.'
-    return
-  }
-  if (cfg.vapidPublicKey === 'COLE_AQUI') {
-    btn.disabled = true
-    txt.textContent += ' Antes, coloque a chave pública de avisos (vapidPublicKey) no config.json.'
-    return
-  }
-  navigator.serviceWorker.ready.then(r => r.pushManager.getSubscription()).then(s => {
-    if (s && Notification.permission === 'granted') { btn.textContent = 'Mostrar código de novo'; mostrarCodigo(s) }
-  })
-  btn.onclick = async () => {
-    if (await Notification.requestPermission() !== 'granted')
-      return txt.textContent = 'As notificações estão bloqueadas. Libere nas configurações do site e tente de novo.'
-    const reg = await navigator.serviceWorker.ready
-    const key = Uint8Array.from(atob(cfg.vapidPublicKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
-    mostrarCodigo(await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }))
-  }
-  $('copiar').onclick = async () => {
-    await navigator.clipboard.writeText($('codigo').value)
-    $('copiar').textContent = 'Código copiado'
-  }
-}
-
-navigator.serviceWorker?.register('sw.js')
-
-Promise.all([get('config.json'), get('prices.json')]).then(([cfg, hist]) => {
-  $('o-cod').textContent = cfg.origem; $('o-nome').textContent = cfg.origemNome; $('o-data').textContent = 'ida ' + dia(cfg.ida)
-  $('d-cod').textContent = cfg.destino; $('d-nome').textContent = cfg.destinoNome
-  $('d-data').textContent = cfg.volta ? 'volta ' + dia(cfg.volta) : 'só ida'
-  voar()
-  avisos(cfg)
-
-  resumo(cfg, hist)
-  limite(cfg, hist)
-  if (!hist.length) return
-  $('sec-hist').hidden = false
-  for (const h of hist.slice(-20).reverse()) {
-    const quando = new Date(h.t).toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-    const a = document.createElement('a')
-    if (h.url) { a.href = h.url; a.target = '_blank'; a.rel = 'noopener' }
-    a.innerHTML = '<b></b><span class="quando"></span><span class="ver">Ver voos</span>'
-    a.children[0].textContent = brl(h.price)
-    a.children[1].textContent = (h.cia ? h.cia + ', ' : '') + quando
-    if (!h.url) a.children[2].remove()
-    $('hist').appendChild(document.createElement('li')).appendChild(a)
-  }
-})
-
 function resumo(cfg, hist) {
   const v = $('veredito')
   if (!hist.length) {
-    v.textContent = 'Nenhuma checagem ainda.'
-    $('sub').textContent = 'O preço é buscado a cada 8 horas. Para buscar agora, rode o workflow "check" na aba Actions do GitHub.'
-    $('rota-desc').textContent = `${cfg.origemNome} para ${cfg.destinoNome}, ainda sem preço.`
+    $('v-titulo').textContent = 'Nenhuma checagem ainda'
+    $('v-frase').textContent = 'O primeiro preço aparece aqui depois da próxima busca.'
+    $('v-sub').textContent = 'Para buscar agora, rode o workflow "check" na aba Actions do GitHub.'
     return
   }
   const agora = hist.at(-1).price, antes = hist.at(-2)?.price, min = Math.min(...hist.map(h => h.price))
-  $('preco').textContent = brl(agora)
-  $('rota-desc').textContent = `${cfg.origemNome} para ${cfg.destinoNome}: ${brl(agora)} ida e volta.`
+  const dif = Math.abs(agora - cfg.precoMax)
   v.dataset.estado = agora <= cfg.precoMax ? 'bom' : 'acima'
-  v.textContent = agora > cfg.precoMax ? `Ainda ${brl(agora - cfg.precoMax)} acima do seu limite de ${brl(cfg.precoMax)}.`
-    : agora <= min ? 'Menor preço até agora e abaixo do seu limite. Bom momento pra comprar.'
-    : `Abaixo do seu limite de ${brl(cfg.precoMax)}.`
+  $('v-titulo').textContent = agora > cfg.precoMax ? `Faltam ${brl(dif)}` : dif ? `${brl(dif)} abaixo do limite` : 'No seu limite'
+  $('v-frase').textContent = agora > cfg.precoMax ? `pra chegar no seu limite de ${brl(cfg.precoMax)}.`
+    : agora <= min && hist.length > 1 ? 'Menor preço até agora. Bom momento pra comprar.'
+    : `Seu limite é ${brl(cfg.precoMax)}. Bom momento pra comprar.`
   const mov = antes == null ? '' : agora < antes ? `Caiu ${brl(antes - agora)} desde a checagem anterior. `
     : agora > antes ? `Subiu ${brl(agora - antes)} desde a checagem anterior. ` : 'Sem mudança desde a checagem anterior. '
-  $('sub').textContent = mov + 'Última checagem ' + ha(hist.at(-1).t) + '.'
+  $('v-sub').textContent = mov + 'Última checagem ' + ha(hist.at(-1).t) + '.'
 
-  $('sec-grafico').hidden = false
-  grafico(hist, cfg.precoMax)
+  // com o preço parado o gráfico seria só uma reta; ele aparece quando houver variação
+  const variou = new Set(hist.map(h => h.price)).size > 1
+  $('sec-grafico').hidden = !variou
+  if (variou) grafico(hist, cfg.precoMax)
+}
+
+function historico(hist) {
+  if (!hist.length) return
+  $('sec-hist').hidden = false
+  const ultimos = hist.slice(-20)
+  for (let i = ultimos.length - 1; i >= 0; i--) {
+    const h = ultimos[i], ant = hist[hist.length - ultimos.length + i - 1]
+    const linha = document.createElement(h.url ? 'a' : 'div')
+    if (h.url) { linha.href = h.url; linha.target = '_blank'; linha.rel = 'noopener' }
+    linha.innerHTML = '<span class="valor"><b></b><span class="delta"></span></span><span class="quando"></span>' + (h.url ? '<span class="ver">Ver voos</span>' : '')
+    linha.querySelector('b').textContent = brl(h.price)
+    const d = linha.querySelector('.delta')
+    if (ant) {
+      const n = h.price - ant.price
+      d.className = 'delta ' + (n < 0 ? 'caiu' : n > 0 ? 'subiu' : 'igual')
+      d.textContent = n < 0 ? `caiu ${brl(-n)}` : n > 0 ? `subiu ${brl(n)}` : 'igual'
+    }
+    linha.querySelector('.quando').textContent = (h.cia ? h.cia + ', ' : '') + quando(h.t)
+    const li = $('hist').appendChild(document.createElement('li'))
+    li.appendChild(linha)
+    li.hidden = ultimos.length - 1 - i >= 5
+  }
+  const escondidos = $('hist').querySelectorAll('li[hidden]')
+  if (!escondidos.length) return
+  $('mais-hist').hidden = false
+  $('mais-hist').textContent = `Mostrar mais ${escondidos.length}`
+  $('mais-hist').onclick = () => { escondidos.forEach(li => li.hidden = false); $('mais-hist').hidden = true }
 }
 
 function limite(cfg, hist) {
   const campo = $('novo-limite'), msg = $('limite-msg'), btn = $('salvar')
   campo.value = cfg.precoMax
+  const mudou = () => { btn.disabled = +campo.value === cfg.precoMax || !campo.value; msg.textContent = ''; msg.dataset.estado = '' }
+  campo.oninput = mudou
+  const somar = n => { campo.value = Math.max(100, (+campo.value || 0) + n); mudou() }
+  $('menos').onclick = () => somar(-50)
+  $('mais').onclick = () => somar(50)
   $('form-limite').onsubmit = async e => {
     e.preventDefault()
     btn.disabled = true; msg.dataset.estado = ''; msg.textContent = 'Salvando…'
@@ -320,13 +349,76 @@ function limite(cfg, hist) {
       const d = await r.json().catch(() => ({ erro: `O servidor respondeu ${r.status}.` }))
       if (!r.ok) throw new Error(d.erro)
       cfg.precoMax = d.precoMax
+      campo.value = d.precoMax
       resumo(cfg, hist)
       msg.dataset.estado = 'ok'; msg.textContent = `Limite salvo: ${brl(d.precoMax)}. Vale a partir da próxima checagem.`
     } catch (err) {
+      btn.disabled = false
       msg.dataset.estado = 'erro'; msg.textContent = err.message === 'Failed to fetch' ? 'Sem conexão. Tente de novo.' : err.message
-    } finally { btn.disabled = false }
+    }
   }
 }
+
+const mostrarCodigo = s => { $('passo').hidden = false; $('codigo').value = JSON.stringify(s) }
+
+function avisos(cfg) {
+  const txt = $('aviso-txt'), btn = $('ativar')
+  if (!('PushManager' in window)) {
+    btn.hidden = true
+    txt.textContent += /iPhone|iPad/.test(navigator.userAgent)
+      ? ' No iPhone, primeiro adicione o app à tela de início (Compartilhar, depois Adicionar à Tela de Início) e abra por lá.'
+      : ' Este navegador não suporta avisos. Tente pelo Chrome.'
+    return
+  }
+  navigator.serviceWorker.ready.then(r => r.pushManager.getSubscription()).then(s => {
+    if (!s || Notification.permission !== 'granted') return
+    txt.textContent = 'Avisos ativos neste aparelho. Se você ainda não salvou o código no GitHub, ele está aqui embaixo.'
+    btn.textContent = 'Mostrar código'; btn.className = 'leve'
+  })
+  btn.onclick = async () => {
+    if (await Notification.requestPermission() !== 'granted')
+      return txt.textContent = 'As notificações estão bloqueadas. Libere nas configurações do site e tente de novo.'
+    const reg = await navigator.serviceWorker.ready
+    const key = Uint8Array.from(atob(cfg.vapidPublicKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
+    mostrarCodigo(await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }))
+    btn.hidden = true
+  }
+  $('copiar').onclick = async () => {
+    await navigator.clipboard.writeText($('codigo').value)
+    $('copiar').textContent = 'Código copiado'
+  }
+}
+
+// o workflow roda às 0h, 8h e 16h UTC
+function rodape() {
+  const prox = new Date(); prox.setUTCMinutes(0, 0, 0)
+  do prox.setUTCHours(prox.getUTCHours() + 1); while (prox.getUTCHours() % 8)
+  $('rodape').textContent = `Os preços vêm do Google Flights a cada 8 horas. Próxima busca por volta das ${prox.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`
+}
+
+navigator.serviceWorker?.register('sw.js')
+
+Promise.all([get('config.json'), get('prices.json')]).then(([cfg, hist]) => {
+  $('o-cod').textContent = cfg.origem; $('o-nome').textContent = cfg.origemNome; $('o-data').textContent = 'ida ' + dia(cfg.ida)
+  $('d-cod').textContent = cfg.destino; $('d-nome').textContent = cfg.destinoNome
+  $('d-data').textContent = cfg.volta ? 'volta ' + dia(cfg.volta) : 'só ida'
+  const dias = Math.ceil((new Date(cfg.ida + 'T00:00') - Date.now()) / 864e5)
+  $('contagem').textContent = dias > 1 ? `daqui a ${dias} dias` : dias === 1 ? 'amanhã' : dias === 0 ? 'hoje' : ''
+
+  const ult = hist.at(-1)
+  if (ult) {
+    $('preco').textContent = brl(ult.price)
+    $('legenda').textContent = (cfg.volta ? 'ida e volta' : 'só ida') + ', por pessoa' + (ult.cia ? ', na ' + ult.cia : '')
+    $('rota-desc').textContent = `${cfg.origemNome} para ${cfg.destinoNome}: ${brl(ult.price)}.`
+  } else $('rota-desc').textContent = `${cfg.origemNome} para ${cfg.destinoNome}, ainda sem preço.`
+  voar()
+
+  resumo(cfg, hist)
+  historico(hist)
+  limite(cfg, hist)
+  avisos(cfg)
+  rodape()
+})
 </script>
 </body>
 </html>
