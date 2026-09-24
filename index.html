@@ -78,7 +78,7 @@
   .ponta { fill: var(--texto); }
   .alvo { fill: var(--ink); stroke: var(--texto); stroke-width: 2; }
 
-  .pulso { display: flex; align-items: flex-start; gap: 10px; color: var(--faint); font-size: 13px; margin: 20px 0 44px; }
+  .pulso { display: flex; align-items: flex-start; gap: 10px; color: var(--faint); font-size: 13px; margin: 40px 0 44px; }
   .pulso i { width: 7px; height: 7px; border-radius: 50%; background: var(--ambar); flex: none; margin-top: .6em; }
   .pulso b { color: var(--texto); font-weight: 500; }
 
@@ -94,6 +94,7 @@
   .trechos-hoje .rotulo { margin-bottom: 6px; }
   .trechos-hoje b { display: block; font: 700 24px/1.1 var(--display); letter-spacing: -.04em; }
   .trechos-hoje .cia { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .trechos-hoje .conex { display: block; color: var(--faint); font-size: 12px; }
   .acao { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
   .acao .msg { margin: 0; flex: 1; }
 
@@ -416,7 +417,9 @@ const ha = t => {
   const min = Math.round((new Date(t) - Date.now()) / 60000)
   return Math.abs(min) < 60 ? rtf.format(min, 'minute') : Math.abs(min) < 2880 ? rtf.format(Math.round(min / 60), 'hour') : rtf.format(Math.round(min / 1440), 'day')
 }
-const trechos = h => `ida ${brl(h.ida.price)} na ${h.ida.cia}` + (h.volta ? `, volta ${brl(h.volta.price)} na ${h.volta.cia}` : '')
+const conexoes = e => !e.length ? 'direto' : e.length === 1 ? `1 conexão em ${e[0]}` : `${e.length} conexões (${e.join(', ')})`
+const comConexoes = t => t.cia + (t.escalas ? `, ${conexoes(t.escalas)}` : '')
+const trechos = h => `ida ${brl(h.ida.price)} na ${comConexoes(h.ida)}` + (h.volta ? `; volta ${brl(h.volta.price)} na ${comConexoes(h.volta)}` : '')
 const quando = t => new Date(t).toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const semRede = err => err.message === 'Failed to fetch' ? 'Sem conexão. Tente de novo.' : err.message
 const semMovimento = () => matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -542,8 +545,8 @@ function topoDaRota(rota, hist) {
   if (ult) {
     $('preco').textContent = num(ult.price)
     if (ult.ida) {
-      $('legenda').textContent = `ida ${brl(ult.ida.price)} na ${ult.ida.cia}`
-      if (ult.volta) $('legenda2').textContent = `volta ${brl(ult.volta.price)} na ${ult.volta.cia}`
+      $('legenda').textContent = `ida ${brl(ult.ida.price)} na ${comConexoes(ult.ida)}`
+      if (ult.volta) $('legenda2').textContent = `volta ${brl(ult.volta.price)} na ${comConexoes(ult.volta)}`
     } else $('legenda').textContent = 'ida e volta, por pessoa' + (ult.cia ? ', na ' + ult.cia : '')
     $('t-rota').appendChild(document.createElement('b')).textContent = brl(ult.price)
     $('rota-desc').textContent = `${rota.origemNome} para ${rota.destinoNome}: ${brl(ult.price)}.`
@@ -586,10 +589,11 @@ function resumo(rota, hist, limite) {
     if (!t) continue
     const c = document.createElement(t.url ? 'a' : 'div')
     if (t.url) { c.href = t.url; c.target = '_blank'; c.rel = 'noopener' }
-    c.innerHTML = '<p class="rotulo"></p><b></b><span class="cia"></span>'
+    c.innerHTML = '<p class="rotulo"></p><b></b><span class="cia"></span><span class="conex"></span>'
     c.querySelector('.rotulo').textContent = `${nome}, ${diaCurto(d)}`
     valorGrande(c.querySelector('b'), t.price)
     c.querySelector('.cia').textContent = t.cia
+    c.querySelector('.conex').textContent = t.escalas ? conexoes(t.escalas) : ''
     caixa.appendChild(c)
   }
 
@@ -821,7 +825,7 @@ function mostrarVoos(res, v) {
   total.innerHTML = '<p class="rotulo">Mais barato combinando</p><p class="grande"></p><small></small><div class="botoes"><button class="leve"></button></div>'
   if (i && vo) {
     valorGrande(total.querySelector('.grande'), i.preco + vo.preco)
-    total.querySelector('small').textContent = `ida ${brl(i.preco)} na ${i.cia} + volta ${brl(vo.preco)} na ${vo.cia}`
+    total.querySelector('small').textContent = `ida ${brl(i.preco)} na ${i.cia}, ${conexoes(i.escalas)}; volta ${brl(vo.preco)} na ${vo.cia}, ${conexoes(vo.escalas)}`
   } else {
     total.querySelector('.rotulo').textContent = 'Sem combinação'
     total.querySelector('.grande').remove()
@@ -864,7 +868,7 @@ function trechoBusca(nome, data, de, para, r) {
     if (r.url) { a.href = r.url; a.target = '_blank'; a.rel = 'noopener' }
     a.innerHTML = '<span class="valor"><b></b></span><span class="quando"></span><span class="horario"></span>'
     a.querySelector('b').textContent = brl(v.preco)
-    a.querySelector('.quando').textContent = `${v.cia}, ${v.escalas.length ? (v.escalas.length === 1 ? '1 parada em ' : v.escalas.length + ' paradas: ') + v.escalas.join(', ') : 'direto'}`
+    a.querySelector('.quando').textContent = `${v.cia}, ${conexoes(v.escalas)}`
     const dias = Math.round((new Date(v.chegada.slice(0, 10)) - new Date(v.saida.slice(0, 10))) / 864e5)
     const h = a.querySelector('.horario')
     h.textContent = `${hora(v.saida)}–${hora(v.chegada)}${dias ? ` +${dias}` : ''}`

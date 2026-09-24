@@ -106,7 +106,7 @@ export async function checarRota(r) {
   ]).finally(gastou)
   r.ultima = new Date().toISOString()
   if (!ida.voos.length || (volta && !volta.voos.length)) { await gravarRota(r); return null }
-  const trecho = x => x && { price: x.voos[0].preco, cia: x.voos[0].cia, url: x.url }
+  const trecho = x => x && { price: x.voos[0].preco, cia: x.voos[0].cia, escalas: x.voos[0].escalas, url: x.url }
   const e = { t: r.ultima, price: 0, ida: trecho(ida), ...(volta && { volta: trecho(volta) }) }
   e.price = e.ida.price + (e.volta?.price ?? 0)
   const anterior = r.hist.at(-1)?.price
