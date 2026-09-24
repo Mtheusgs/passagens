@@ -8,11 +8,17 @@ export const VAPID_PUBLICA = 'BL8m9xfo8pcTbuPSnCO8xDugqMUezGG9Wq7VYzhQag3KhuR5QV
 export const RESERVA = 20              // buscas guardadas pro Buscar agora e pra busca avulsa
 export const INTERVALO_MIN = 4 * 36e5  // no máximo 6 checagens por dia por viagem
 
-const URL_REDIS = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL
-const TOKEN_REDIS = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN
+// aceita as variáveis com ou sem prefixo (ex.: STORAGE_KV_REST_API_URL), do jeito que a Vercel criar
+const variavel = (...fins) => Object.keys(process.env).find(k => fins.some(f => k.endsWith(f)) && !k.includes('READ_ONLY'))
+const URL_REDIS = process.env[variavel('KV_REST_API_URL', 'REDIS_REST_URL')]
+const TOKEN_REDIS = process.env[variavel('KV_REST_API_TOKEN', 'REDIS_REST_TOKEN')]
 
 export async function redis(...cmd) {
-  if (!URL_REDIS) throw new Error('Banco de dados não configurado. Conecte o Upstash Redis ao projeto na Vercel.')
+  if (!URL_REDIS || !TOKEN_REDIS) {
+    const achadas = Object.keys(process.env).filter(k => /REDIS|KV_|UPSTASH/.test(k))
+    throw new Error('Banco de dados não configurado. Conecte o Upstash Redis ao projeto na Vercel e faça Redeploy. '
+      + (achadas.length ? `Variáveis de banco encontradas: ${achadas.join(', ')}.` : 'Nenhuma variável de banco encontrada.'))
+  }
   const r = await fetch(URL_REDIS, { method: 'POST', headers: { Authorization: `Bearer ${TOKEN_REDIS}` }, body: JSON.stringify(cmd) })
   const d = await r.json()
   if (d.error) throw new Error('Banco de dados: ' + d.error)
