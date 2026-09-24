@@ -1,6 +1,6 @@
 name: check
 on:
-  schedule: [{ cron: '0 */8 * * *' }] # 3x/dia ≈ 90 buscas/mês, cabe no free da SerpApi
+  schedule: [{ cron: '0 12 * * *' }] # 1x/dia (8h em Boa Vista), 2 buscas cada ≈ 60/mês no free da SerpApi
   workflow_dispatch:
 permissions: { contents: write }
 jobs:
