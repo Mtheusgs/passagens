@@ -72,7 +72,7 @@
   .campo span { font: 800 2rem var(--display); }
   input { font: inherit; color: var(--tinta); background: transparent; border: 0; width: 100%; padding: 4px 0; }
   #novo-limite { font: 800 2.6rem/1.1 var(--display); font-variant-numeric: tabular-nums; }
-  #novo-limite:focus-visible, #senha:focus-visible { outline: none; }
+  #novo-limite:focus-visible { outline: none; }
   .campo:focus-within { border-color: var(--ipe); }
   #limite-msg { margin-top: 12px; color: var(--apagado); }
   #limite-msg[data-estado=ok] { color: var(--mata); }
@@ -126,10 +126,6 @@
     <form id="form-limite">
       <label for="novo-limite">Avisar quando a passagem ficar abaixo de</label>
       <div class="campo"><span aria-hidden="true">R$</span><input id="novo-limite" type="number" inputmode="numeric" min="100" max="50000" step="10" required></div>
-      <div id="campo-senha" hidden>
-        <label for="senha">Senha do app</label>
-        <div class="campo"><input id="senha" type="password" autocomplete="current-password"></div>
-      </div>
       <button id="salvar">Salvar limite</button>
       <p id="limite-msg" role="status"></p>
     </form>
@@ -312,26 +308,17 @@ function resumo(cfg, hist) {
   grafico(hist, cfg.precoMax)
 }
 
-// a senha fica guardada só neste aparelho depois do primeiro acerto
-const lerSenha = () => { try { return localStorage.getItem('senha') } catch { return null } }
-const guardarSenha = v => { try { v ? localStorage.setItem('senha', v) : localStorage.removeItem('senha') } catch {} }
-
 function limite(cfg, hist) {
   const campo = $('novo-limite'), msg = $('limite-msg'), btn = $('salvar')
   campo.value = cfg.precoMax
-  $('campo-senha').hidden = !!lerSenha()
   $('form-limite').onsubmit = async e => {
     e.preventDefault()
-    const senha = lerSenha() || $('senha').value
-    if (!senha) { $('campo-senha').hidden = false; return $('senha').focus() }
     btn.disabled = true; msg.dataset.estado = ''; msg.textContent = 'Salvando…'
     try {
       const r = await fetch('/api/limite', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senha, precoMax: +campo.value }) })
+        body: JSON.stringify({ precoMax: +campo.value }) })
       const d = await r.json().catch(() => ({ erro: `O servidor respondeu ${r.status}.` }))
-      if (r.status === 401) { guardarSenha(null); $('campo-senha').hidden = false; $('senha').value = '' }
       if (!r.ok) throw new Error(d.erro)
-      guardarSenha(senha); $('campo-senha').hidden = true
       cfg.precoMax = d.precoMax
       resumo(cfg, hist)
       msg.dataset.estado = 'ok'; msg.textContent = `Limite salvo: ${brl(d.precoMax)}. Vale a partir da próxima checagem.`

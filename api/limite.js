@@ -1,10 +1,8 @@
 // O app é estático: pra mudar o limite, esta função grava o config.json direto no repositório.
-// Precisa das variáveis GITHUB_TOKEN e APP_SENHA configuradas na Vercel.
+// Precisa da variável GITHUB_TOKEN configurada na Vercel.
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
-  const { senha, precoMax } = req.body ?? {}
-  if (!process.env.APP_SENHA || senha !== process.env.APP_SENHA) return res.status(401).json({ erro: 'Senha incorreta.' })
-  const valor = Math.round(Number(precoMax))
+  const valor = Math.round(Number(req.body?.precoMax))
   if (!(valor >= 100 && valor <= 50000)) return res.status(400).json({ erro: 'Use um valor entre R$ 100 e R$ 50.000.' })
 
   const url = `https://api.github.com/repos/${process.env.VERCEL_GIT_REPO_OWNER}/${process.env.VERCEL_GIT_REPO_SLUG}/contents/config.json`
