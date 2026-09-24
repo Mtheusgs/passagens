@@ -25,6 +25,7 @@
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { background: var(--ink); }
   body { margin: 0; background: var(--ink); color: var(--texto); font: 400 15px/1.6 var(--ui);
     padding: 0 16px max(24px, env(safe-area-inset-bottom)); overflow-x: clip; -webkit-font-smoothing: antialiased; }
@@ -184,6 +185,16 @@
 
   footer { color: var(--faint); font-size: 12px; line-height: 1.7; }
   footer.faixa { padding: 28px 0 8px; }
+  /* primeira abertura e troca de viagem */
+  .inicio { padding: 36px 0 44px; }
+  .inicio h1 { font: 700 30px/1.15 var(--display); letter-spacing: -.04em; margin: 0 0 12px; }
+  .inicio > p:not(.rotulo) { color: var(--muted); margin-bottom: 24px; max-width: 44ch; }
+  .fld-limite input { font: 700 20px var(--display); letter-spacing: -.03em; }
+  .botoes { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .viagem-atual { font: 700 17px/1.4 var(--display); letter-spacing: -.02em; margin: 8px 0 4px; }
+  .viagem-atual + p { margin-top: 0; }
+  .combo .botoes { margin-top: 16px; }
+  .aviso-erro { color: var(--ruim); }
 </style>
 </head>
 <body>
@@ -202,6 +213,30 @@
 </header>
 
 <main>
+  <section class="inicio" id="inicio" hidden>
+    <p class="rotulo" id="inicio-rotulo">Primeiro passo</p>
+    <h1 id="inicio-titulo">Qual viagem você quer acompanhar?</h1>
+    <p>O app busca o preço da ida e da volta algumas vezes por dia e avisa neste aparelho quando ficar abaixo do seu limite.</p>
+    <form id="form-viagem" class="busca" novalidate>
+      <div class="linha-rota">
+        <label class="fld"><span>De</span><input id="v-origem" list="aeroportos" autocomplete="off" placeholder="Cidade ou código" required></label>
+        <button type="button" class="leve quadrado" id="v-inverter" aria-label="Trocar origem e destino">⇅</button>
+        <label class="fld"><span>Para</span><input id="v-destino" list="aeroportos" autocomplete="off" placeholder="Cidade ou código" required></label>
+      </div>
+      <div class="linha-datas">
+        <label class="fld"><span>Ida</span><input id="v-ida" type="date" required></label>
+        <label class="fld"><span>Volta</span><input id="v-volta" type="date" required></label>
+      </div>
+      <label class="fld fld-limite"><span>Avisar abaixo de (ida + volta, R$)</span><input id="v-limite" type="number" inputmode="numeric" min="100" max="50000" step="10" required></label>
+      <div class="botoes">
+        <button id="v-salvar">Acompanhar esta viagem</button>
+        <button type="button" class="leve" id="v-cancelar" hidden>Cancelar</button>
+      </div>
+      <p class="msg" id="v-msg" role="status"></p>
+    </form>
+  </section>
+
+  <div id="painel" hidden>
   <svg class="rota" id="rota" viewBox="0 0 400 452" role="img" aria-labelledby="rota-desc">
     <desc id="rota-desc">Carregando rota…</desc>
     <text class="codigo" x="-3" y="56" id="o-cod"></text>
@@ -249,6 +284,8 @@
     <ul class="lista" id="hist"></ul>
     <button class="leve mais-hist" id="mais-hist" hidden></button>
   </section>
+
+  </div>
 
   <section class="faixa" id="sec-busca">
     <p class="rotulo">Outra viagem</p>
@@ -330,10 +367,16 @@
     </div>
   </section>
 
-  <section class="faixa" id="ajustes">
+  <section class="faixa" id="ajustes" hidden>
     <p class="rotulo">Ajustes</p>
-    <h2>Limite e avisos</h2>
+    <h2>Viagem, limite e avisos</h2>
     <div class="cartoes">
+      <div class="cartao">
+        <h3>Sua viagem</h3>
+        <p class="viagem-atual" id="viagem-atual"></p>
+        <p>Cada aparelho acompanha a própria viagem. Quem escolher a mesma viagem divide as buscas e o histórico.</p>
+        <button class="leve" id="trocar">Trocar viagem</button>
+      </div>
       <div class="cartao">
         <h3>Seu limite</h3>
         <p>Você recebe um aviso quando ida e volta somadas ficarem abaixo deste valor.</p>
@@ -348,14 +391,10 @@
         </form>
       </div>
       <div class="cartao">
-        <h3>Avisos no celular</h3>
-        <p id="aviso-txt">Quando o preço cair abaixo do seu limite, você recebe uma notificação neste aparelho, mesmo com o app fechado.</p>
+        <h3>Avisos neste aparelho</h3>
+        <p id="aviso-txt">Quando o preço cair abaixo do seu limite, você recebe uma notificação aqui, mesmo com o app fechado.</p>
         <button id="ativar">Ativar avisos</button>
-        <div id="passo" hidden>
-          <p class="msg" style="margin-top:18px">Falta um passo: copie o código abaixo e salve no GitHub como o secret PUSH_SUB.</p>
-          <textarea id="codigo" readonly aria-label="Código de inscrição dos avisos"></textarea>
-          <button id="copiar" class="leve">Copiar código</button>
-        </div>
+        <p class="msg" id="aviso-msg" role="status"></p>
       </div>
     </div>
   </section>
@@ -379,8 +418,8 @@ const ha = t => {
 }
 const trechos = h => `ida ${brl(h.ida.price)} na ${h.ida.cia}` + (h.volta ? `, volta ${brl(h.volta.price)} na ${h.volta.cia}` : '')
 const quando = t => new Date(t).toLocaleString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-const get = f => fetch(f, { cache: 'no-store' }).then(r => r.json())
 const semRede = err => err.message === 'Failed to fetch' ? 'Sem conexão. Tente de novo.' : err.message
+const semMovimento = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 const NS = 'http://www.w3.org/2000/svg'
 const el = (tag, attrs, parent) => {
   const e = document.createElementNS(NS, tag)
@@ -390,7 +429,27 @@ const el = (tag, attrs, parent) => {
 // número grande com o "R$" pequeno em cima, no estilo dos números do app
 const valorGrande = (alvo, v) => { alvo.innerHTML = '<span class="moeda">R$</span>'; alvo.append(num(v)) }
 
-// avião voa pelo arco uma vez ao abrir e o preço aparece quando ele chega; com movimento reduzido já fica tudo no lugar
+// cada aparelho tem um código próprio, guardado nele; é o que separa as viagens de cada um
+const ID = (() => {
+  try {
+    let v = localStorage.getItem('aparelho')
+    if (!v) localStorage.setItem('aparelho', v = crypto.randomUUID())
+    return v
+  } catch { return crypto.randomUUID() }
+})()
+
+async function api(caminho, corpo) {
+  const r = await fetch(caminho, corpo
+    ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: ID, ...corpo }) }
+    : { cache: 'no-store' })
+  const d = await r.json().catch(() => ({ erro: `O servidor respondeu ${r.status}.` }))
+  if (!r.ok) throw new Error(d.erro)
+  return d
+}
+
+let E = null // o estado vindo do servidor: aparelho, viagem com histórico e cota
+
+// avião voa pelo arco e o preço aparece quando ele chega; com movimento reduzido já fica tudo no lugar
 function voar() {
   const arco = $('arco'), total = arco.getTotalLength(), parada = .6
   $('feito').setAttribute('d', arco.getAttribute('d'))
@@ -401,7 +460,7 @@ function voar() {
     $('feito').style.strokeDasharray = `${total * p} ${total}`
     $('bloco-preco').style.opacity = Math.max(0, Math.min(1, (p / parada - .45) * 2.2))
   }
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return pos(parada)
+  if (semMovimento()) return pos(parada)
   pos(0)
   const t0 = performance.now()
   const passo = t => {
@@ -468,29 +527,62 @@ function grafico(hist, limite) {
   svg.addEventListener('pointerleave', () => { dica.hidden = true; mira.setAttribute('visibility', 'hidden'); ponto.setAttribute('visibility', 'hidden') })
 }
 
-function resumo(cfg, hist) {
+// ---------- a viagem acompanhada ----------
+function topoDaRota(rota, hist) {
+  $('o-cod').textContent = rota.origem; $('o-nome').textContent = rota.origemNome; $('o-data').textContent = 'ida ' + dia(rota.ida)
+  $('d-cod').textContent = rota.destino; $('d-nome').textContent = rota.destinoNome
+  $('d-data').textContent = rota.volta ? 'volta ' + dia(rota.volta) : 'só ida'
+  const dias = Math.ceil((new Date(rota.ida + 'T00:00') - Date.now()) / 864e5)
+  $('contagem').textContent = dias > 1 ? `daqui a ${dias} dias` : dias === 1 ? 'amanhã' : dias === 0 ? 'hoje' : ''
+
+  const ult = hist.at(-1)
+  $('t-rota').textContent = `${rota.origem}⇄${rota.destino}`
+  $('legenda').textContent = ''; $('legenda2').textContent = ''
+  const p = $('pulso').querySelector('span')
+  if (ult) {
+    $('preco').textContent = num(ult.price)
+    if (ult.ida) {
+      $('legenda').textContent = `ida ${brl(ult.ida.price)} na ${ult.ida.cia}`
+      if (ult.volta) $('legenda2').textContent = `volta ${brl(ult.volta.price)} na ${ult.volta.cia}`
+    } else $('legenda').textContent = 'ida e volta, por pessoa' + (ult.cia ? ', na ' + ult.cia : '')
+    $('t-rota').appendChild(document.createElement('b')).textContent = brl(ult.price)
+    $('rota-desc').textContent = `${rota.origemNome} para ${rota.destinoNome}: ${brl(ult.price)}.`
+    p.innerHTML = '<b></b> '
+    p.firstChild.textContent = hist.length === 1 ? '1 checagem' : `${hist.length} checagens`
+    p.append(`desde ${quando(hist[0].t).split(',')[0]}, a última ${ha(ult.t)}`)
+  } else {
+    $('preco').textContent = '–'
+    $('rota-desc').textContent = `${rota.origemNome} para ${rota.destinoNome}, ainda sem preço.`
+    p.textContent = 'Nenhuma checagem ainda. A primeira acontece em até uma hora, ou toque em Buscar agora.'
+  }
+}
+
+function resumo(rota, hist, limite) {
   const v = $('veredito')
+  const caixa = $('trechos-hoje')
   if (!hist.length) {
+    delete v.dataset.estado
     $('v-rotulo').textContent = 'Situação'
     $('v-num').textContent = 'Sem preço ainda'
-    $('v-frase').textContent = 'O primeiro preço aparece aqui depois da próxima busca. Pra não esperar, toque em Buscar agora.'
+    $('v-frase').textContent = `Seu limite é ${brl(limite)}. Pra não esperar a primeira checagem, toque em Buscar agora.`
+    caixa.hidden = true
+    $('sec-grafico').hidden = true
     return
   }
   const ult = hist.at(-1), agora = ult.price, antes = hist.at(-2)?.price, min = Math.min(...hist.map(h => h.price))
-  const dif = Math.abs(agora - cfg.precoMax)
-  v.dataset.estado = agora <= cfg.precoMax ? 'bom' : 'acima'
-  $('v-rotulo').textContent = agora > cfg.precoMax ? 'Faltam pro seu limite' : 'Abaixo do seu limite'
+  const dif = Math.abs(agora - limite)
+  v.dataset.estado = agora <= limite ? 'bom' : 'acima'
+  $('v-rotulo').textContent = agora > limite ? 'Faltam pro seu limite' : 'Abaixo do seu limite'
   valorGrande($('v-num'), dif)
   const mov = antes == null ? '' : agora < antes ? `Caiu ${brl(antes - agora)} desde a checagem anterior. `
     : agora > antes ? `Subiu ${brl(agora - antes)} desde a checagem anterior. ` : 'Sem mudança desde a checagem anterior. '
-  $('v-frase').textContent = (agora > cfg.precoMax ? `Hoje está ${brl(agora)} e o seu limite é ${brl(cfg.precoMax)}. `
+  $('v-frase').textContent = (agora > limite ? `Hoje está ${brl(agora)} e o seu limite é ${brl(limite)}. `
     : agora <= min && hist.length > 1 ? 'Menor preço até agora. Bom momento pra comprar. ' : 'Bom momento pra comprar. ') + mov
 
   // cartões de ida e volta com o preço e a companhia de cada trecho
-  const caixa = $('trechos-hoje')
   caixa.hidden = !ult.ida
   caixa.replaceChildren()
-  for (const [nome, t, d] of [['Ida', ult.ida, cfg.ida], ['Volta', ult.volta, cfg.volta]]) {
+  for (const [nome, t, d] of [['Ida', ult.ida, rota.ida], ['Volta', ult.volta, rota.volta]]) {
     if (!t) continue
     const c = document.createElement(t.url ? 'a' : 'div')
     if (t.url) { c.href = t.url; c.target = '_blank'; c.rel = 'noopener' }
@@ -504,12 +596,13 @@ function resumo(cfg, hist) {
   // com o preço parado o gráfico seria só uma reta; ele aparece quando houver variação
   const variou = new Set(hist.map(h => h.price)).size > 1
   $('sec-grafico').hidden = !variou
-  if (variou) grafico(hist, cfg.precoMax)
+  if (variou) grafico(hist, limite)
 }
 
 function historico(hist) {
-  if (!hist.length) return
-  $('sec-hist').hidden = false
+  $('hist').replaceChildren()
+  $('mais-hist').hidden = true
+  $('sec-hist').hidden = !hist.length
   const ultimos = hist.slice(-20)
   for (let i = ultimos.length - 1; i >= 0; i--) {
     const h = ultimos[i], ant = hist[hist.length - ultimos.length + i - 1]
@@ -545,10 +638,98 @@ function historico(hist) {
   $('mais-hist').onclick = () => { escondidos.forEach(li => li.hidden = false); $('mais-hist').hidden = true }
 }
 
-function limite(cfg, hist) {
+// frequência das checagens, que se ajusta sozinha pra cota grátis durar até renovar
+function rodape(c) {
+  if (!c) return $('rodape').textContent = 'Os preços vêm do Google Flights.'
+  const renova = new Date(c.renova + 'T12:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
+  const freq = c.porDia >= 1.5 ? `umas ${Math.round(c.porDia)} vezes por dia` : c.porDia >= .75 ? 'uma vez por dia'
+    : c.porDia > 0 ? `a cada ${Math.round(1 / c.porDia)} dias` : 'só quando alguém toca em Buscar agora'
+  const viagens = c.viagens === 1 ? '1 viagem acompanhada' : `${c.viagens} viagens acompanhadas`
+  $('rodape').textContent = `Os preços vêm do Google Flights. Com ${viagens}, cada uma é checada ${freq}, pra cota grátis de buscas durar até ${renova}. Restam ${c.restantes} buscas.`
+}
+
+// desenha tudo a partir do estado; chamado ao abrir e depois de cada mudança
+function mostrar(novo, { animar } = {}) {
+  E = novo
+  const temViagem = !!E.rota
+  $('painel').hidden = !temViagem
+  $('ajustes').hidden = !temViagem
+  $('inicio').hidden = temViagem
+  $('topo').querySelector('nav').hidden = !temViagem
+  rodape(E.cota)
+  if (!temViagem) return abrirViagem(false)
+  const { rota } = E, hist = rota.hist, limite = E.disp.precoMax
+  topoDaRota(rota, hist)
+  if (animar) voar()
+  resumo(rota, hist, limite)
+  historico(hist)
+  $('viagem-atual').textContent = `${rota.origem} ⇄ ${rota.destino}, ${diaCurto(rota.ida)} a ${diaCurto(rota.volta)}`
+  $('novo-limite').value = limite
+  $('salvar').disabled = true
+  avisos()
+}
+
+// ---------- escolher ou trocar a viagem ----------
+// aceita "Cidade (ABC)" da lista ou o código digitado
+const codigo = v => (v.match(/\(([A-Za-z]{3})\)\s*$/)?.[1] ?? (/^\s*[A-Za-z]{3}\s*$/.test(v) ? v.trim() : '')).toUpperCase()
+const nomeAeroporto = c => [...$('aeroportos').options].find(o => o.value.endsWith(`(${c})`))?.value ?? c
+const nomeCidade = v => v.replace(/\s*\([A-Za-z]{3}\)\s*$/, '').split(',')[0].trim()
+const hojeISO = () => new Date().toISOString().slice(0, 10)
+
+// liga os campos de origem, destino e datas de um formulário e devolve a leitura deles
+function camposViagem(o, d, ida, volta, inverter) {
+  ida.min = volta.min = hojeISO()
+  ida.onchange = () => { volta.min = ida.value || hojeISO(); if (volta.value && volta.value < ida.value) volta.value = '' }
+  inverter.onclick = () => { [o.value, d.value] = [d.value, o.value] }
+  return msg => {
+    const v = { origem: codigo(o.value), destino: codigo(d.value), origemNome: nomeCidade(o.value), destinoNome: nomeCidade(d.value), ida: ida.value, volta: volta.value }
+    msg.dataset.estado = 'erro'
+    if (!v.origem) return msg.textContent = 'Escolha a origem na lista ou digite o código do aeroporto, como BVB.', o.focus(), null
+    if (!v.destino) return msg.textContent = 'Escolha o destino na lista ou digite o código do aeroporto, como CNF.', d.focus(), null
+    if (!v.ida || !v.volta) return msg.textContent = 'Escolha as datas de ida e volta.', (v.ida ? volta : ida).focus(), null
+    msg.textContent = ''; msg.dataset.estado = ''
+    return v
+  }
+}
+
+const lerViagem = camposViagem($('v-origem'), $('v-destino'), $('v-ida'), $('v-volta'), $('v-inverter'))
+
+function abrirViagem(trocando) {
+  const r = E?.rota
+  $('inicio').hidden = false
+  $('inicio-rotulo').textContent = trocando ? 'Trocar viagem' : 'Primeiro passo'
+  $('inicio-titulo').textContent = trocando ? 'Qual viagem você quer acompanhar agora?' : 'Qual viagem você quer acompanhar?'
+  $('v-cancelar').hidden = !trocando
+  // na primeira vez, sugere a viagem que o app já acompanhava
+  $('v-origem').value = nomeAeroporto(r?.origem ?? 'BVB')
+  $('v-destino').value = nomeAeroporto(r?.destino ?? 'CNF')
+  $('v-ida').value = r?.ida ?? '2027-02-07'
+  $('v-volta').value = r?.volta ?? '2027-02-14'
+  $('v-limite').value = E?.disp?.precoMax ?? 1100
+  if (trocando) { $('painel').hidden = true; $('ajustes').hidden = true; scrollTo({ top: 0, behavior: semMovimento() ? 'auto' : 'smooth' }) }
+}
+
+$('trocar').onclick = () => abrirViagem(true)
+$('v-cancelar').onclick = () => mostrar(E)
+$('form-viagem').onsubmit = async e => {
+  e.preventDefault()
+  const msg = $('v-msg'), btn = $('v-salvar'), v = lerViagem(msg)
+  if (!v) return
+  const limite = +$('v-limite').value
+  if (!(limite >= 100)) return msg.dataset.estado = 'erro', msg.textContent = 'Coloque um limite de pelo menos R$ 100.', $('v-limite').focus()
+  btn.disabled = true; msg.textContent = 'Salvando…'
+  try {
+    mostrar(await api('/api/eu', { rota: v, precoMax: limite }), { animar: true })
+    msg.textContent = ''
+    scrollTo({ top: 0 })
+  } catch (err) { msg.dataset.estado = 'erro'; msg.textContent = semRede(err) }
+  finally { btn.disabled = false }
+}
+
+// ---------- limite ----------
+{
   const campo = $('novo-limite'), msg = $('limite-msg'), btn = $('salvar')
-  campo.value = cfg.precoMax
-  const mudou = () => { btn.disabled = +campo.value === cfg.precoMax || !campo.value; msg.textContent = ''; msg.dataset.estado = '' }
+  const mudou = () => { btn.disabled = +campo.value === E.disp.precoMax || !campo.value; msg.textContent = ''; msg.dataset.estado = '' }
   campo.oninput = mudou
   const somar = n => { campo.value = Math.max(100, (+campo.value || 0) + n); mudou() }
   $('menos').onclick = () => somar(-50)
@@ -557,14 +738,8 @@ function limite(cfg, hist) {
     e.preventDefault()
     btn.disabled = true; msg.dataset.estado = ''; msg.textContent = 'Salvando…'
     try {
-      const r = await fetch('/api/limite', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ precoMax: +campo.value }) })
-      const d = await r.json().catch(() => ({ erro: `O servidor respondeu ${r.status}.` }))
-      if (!r.ok) throw new Error(d.erro)
-      cfg.precoMax = d.precoMax
-      campo.value = d.precoMax
-      resumo(cfg, hist)
-      msg.dataset.estado = 'ok'; msg.textContent = `Limite salvo: ${brl(d.precoMax)}. Vale a partir da próxima checagem.`
+      mostrar(await api('/api/eu', { precoMax: +campo.value }))
+      msg.dataset.estado = 'ok'; msg.textContent = `Limite salvo: ${brl(E.disp.precoMax)}.`
     } catch (err) {
       btn.disabled = false
       msg.dataset.estado = 'erro'; msg.textContent = semRede(err)
@@ -572,111 +747,102 @@ function limite(cfg, hist) {
   }
 }
 
-const mostrarCodigo = s => { $('passo').hidden = false; $('codigo').value = JSON.stringify(s) }
-
-function avisos(cfg) {
+// ---------- avisos ----------
+function avisos() {
   const txt = $('aviso-txt'), btn = $('ativar')
   if (!('PushManager' in window)) {
     btn.hidden = true
-    txt.textContent += /iPhone|iPad/.test(navigator.userAgent)
-      ? ' No iPhone, primeiro adicione o app à tela de início (Compartilhar, depois Adicionar à Tela de Início) e abra por lá.'
-      : ' Este navegador não suporta avisos. Tente pelo Chrome.'
+    txt.textContent = /iPhone|iPad/.test(navigator.userAgent)
+      ? 'No iPhone, os avisos só funcionam com o app instalado: toque em Compartilhar, depois em Adicionar à Tela de Início, e abra por lá.'
+      : 'Este navegador não suporta avisos. Tente pelo Chrome.'
     return
   }
-  navigator.serviceWorker.ready.then(r => r.pushManager.getSubscription()).then(s => {
-    if (!s || Notification.permission !== 'granted') return
-    txt.textContent = 'Avisos ativos neste aparelho. Se você ainda não salvou o código no GitHub, ele está aqui embaixo.'
-    btn.textContent = 'Mostrar código'; btn.className = 'leve'
-  })
-  btn.onclick = async () => {
-    if (await Notification.requestPermission() !== 'granted')
-      return txt.textContent = 'As notificações estão bloqueadas. Libere nas configurações do site e tente de novo.'
+  const ativos = E.disp.avisos && Notification.permission === 'granted'
+  txt.textContent = ativos ? 'Avisos ativos neste aparelho. Você recebe uma notificação quando o preço cair abaixo do seu limite.'
+    : 'Quando o preço cair abaixo do seu limite, você recebe uma notificação aqui, mesmo com o app fechado.'
+  btn.textContent = ativos ? 'Desativar avisos' : 'Ativar avisos'
+  btn.className = ativos ? 'leve' : ''
+}
+
+$('ativar').onclick = async () => {
+  const msg = $('aviso-msg'), btn = $('ativar')
+  msg.dataset.estado = ''; msg.textContent = ''
+  btn.disabled = true
+  try {
     const reg = await navigator.serviceWorker.ready
-    const key = Uint8Array.from(atob(cfg.vapidPublicKey.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
-    mostrarCodigo(await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }))
-    btn.hidden = true
-  }
-  $('copiar').onclick = async () => {
-    await navigator.clipboard.writeText($('codigo').value)
-    $('copiar').textContent = 'Código copiado'
-  }
+    if (E.disp.avisos && Notification.permission === 'granted') {
+      await (await reg.pushManager.getSubscription())?.unsubscribe()
+      mostrar(await api('/api/eu', { push: null }))
+      return
+    }
+    if (await Notification.requestPermission() !== 'granted')
+      throw new Error('As notificações estão bloqueadas. Libere nas configurações do site e tente de novo.')
+    const key = Uint8Array.from(atob(E.vapid.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0))
+    const s = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key })
+    mostrar(await api('/api/eu', { push: s.toJSON() }))
+    msg.dataset.estado = 'ok'; msg.textContent = 'Pronto. Os avisos chegam neste aparelho.'
+  } catch (err) { msg.dataset.estado = 'erro'; msg.textContent = semRede(err) }
+  finally { btn.disabled = false }
 }
 
-// dispara a busca e espera o preço novo chegar (GitHub busca ~1 min, Vercel publica ~30 s)
-function buscar(hist) {
+// ---------- buscar agora ----------
+$('buscar').onclick = async () => {
   const btn = $('buscar'), msg = $('buscar-msg')
-  btn.onclick = async () => {
-    btn.disabled = true; msg.dataset.estado = ''; msg.textContent = 'Pedindo a busca…'
-    try {
-      const r = await fetch('/api/buscar', { method: 'POST' })
-      const d = await r.json().catch(() => ({ erro: `O servidor respondeu ${r.status}.` }))
-      if (!r.ok) throw new Error(d.erro)
-    } catch (err) {
-      btn.disabled = false; msg.dataset.estado = 'erro'
-      return msg.textContent = semRede(err)
-    }
-    msg.textContent = 'Buscando no Google Flights. Leva uns 2 minutos, pode deixar o app aberto.'
-    const antes = hist.length, t0 = Date.now()
-    const esperar = async () => {
-      const novo = await get('prices.json').catch(() => hist)
-      if (novo.length > antes) return location.reload()
-      if (Date.now() - t0 > 5 * 60e3) {
-        btn.disabled = false
-        return msg.textContent = 'A busca está demorando mais que o normal. O preço novo aparece quando você abrir o app de novo.'
-      }
-      setTimeout(esperar, 10e3)
-    }
-    setTimeout(esperar, 30e3)
-  }
+  btn.disabled = true; msg.dataset.estado = ''; msg.textContent = 'Buscando no Google Flights…'
+  try {
+    const antes = E.rota.hist.length
+    mostrar(await api('/api/buscar', {}))
+    msg.textContent = E.rota.hist.length > antes ? 'Preço atualizado agora.' : 'Nenhum voo encontrado nessas datas.'
+  } catch (err) { msg.dataset.estado = 'erro'; msg.textContent = semRede(err) }
+  finally { btn.disabled = false }
 }
 
-// busca avulsa de ida e volta; aceita "Cidade (ABC)" da lista ou o código digitado
-const codigo = v => (v.match(/\(([A-Za-z]{3})\)\s*$/)?.[1] ?? (/^\s*[A-Za-z]{3}\s*$/.test(v) ? v.trim() : '')).toUpperCase()
-const nomeAeroporto = c => [...$('aeroportos').options].find(o => o.value.endsWith(`(${c})`))?.value ?? c
+// ---------- buscar outra viagem ----------
 const duracao = m => `${Math.floor(m / 60)}h${m % 60 ? String(m % 60).padStart(2, '0') : ''}`
 const hora = t => t.slice(11, 16)
+const lerBusca = camposViagem($('b-origem'), $('b-destino'), $('b-ida'), $('b-volta'), $('inverter'))
 
-function busca(cfg) {
-  const o = $('b-origem'), d = $('b-destino'), ida = $('b-ida'), volta = $('b-volta'), msg = $('b-msg'), btn = $('b-buscar')
-  o.value = nomeAeroporto(cfg.origem)
-  const hoje = new Date().toISOString().slice(0, 10)
-  ida.min = volta.min = hoje
-  ida.onchange = () => { volta.min = ida.value || hoje; if (volta.value && volta.value < ida.value) volta.value = '' }
-  $('inverter').onclick = () => { [o.value, d.value] = [d.value, o.value] }
-
-  $('form-busca').onsubmit = async e => {
-    e.preventDefault()
-    const corpo = { origem: codigo(o.value), destino: codigo(d.value), ida: ida.value, volta: volta.value }
-    msg.dataset.estado = 'erro'
-    if (!corpo.origem) return msg.textContent = 'Escolha a origem na lista ou digite o código do aeroporto, como BVB.', o.focus()
-    if (!corpo.destino) return msg.textContent = 'Escolha o destino na lista ou digite o código do aeroporto, como CNF.', d.focus()
-    if (!corpo.ida || !corpo.volta) return msg.textContent = 'Escolha as datas de ida e volta.', (corpo.ida ? volta : ida).focus()
-    btn.disabled = true; msg.dataset.estado = ''; msg.textContent = 'Buscando no Google Flights…'; $('b-res').hidden = true
-    try {
-      const r = await fetch('/api/voos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
-      const res = await r.json().catch(() => ({ erro: `O servidor respondeu ${r.status}.` }))
-      if (!r.ok) throw new Error(res.erro)
-      mostrarVoos(res, corpo)
-      msg.textContent = ''
-    } catch (err) {
-      msg.dataset.estado = 'erro'; msg.textContent = semRede(err)
-    } finally { btn.disabled = false }
-  }
+$('form-busca').onsubmit = async e => {
+  e.preventDefault()
+  const msg = $('b-msg'), btn = $('b-buscar'), v = lerBusca(msg)
+  if (!v) return
+  btn.disabled = true; msg.textContent = 'Buscando no Google Flights…'; $('b-res').hidden = true
+  try {
+    mostrarVoos(await api('/api/voos', v), v)
+    msg.textContent = ''
+  } catch (err) {
+    msg.dataset.estado = 'erro'; msg.textContent = semRede(err)
+  } finally { btn.disabled = false }
 }
 
-function mostrarVoos(res, corpo) {
+function mostrarVoos(res, v) {
   $('b-res').hidden = false
-  const i = res.ida.voos[0], v = res.volta.voos[0], total = $('b-total')
-  total.hidden = !(i && v)
-  if (i && v) {
-    total.innerHTML = '<p class="rotulo">Mais barato combinando</p><p class="grande"></p><small></small>'
-    valorGrande(total.querySelector('.grande'), i.preco + v.preco)
-    total.querySelector('small').textContent = `ida ${brl(i.preco)} na ${i.cia} + volta ${brl(v.preco)} na ${v.cia}`
+  const i = res.ida.voos[0], vo = res.volta.voos[0], total = $('b-total')
+  total.innerHTML = '<p class="rotulo">Mais barato combinando</p><p class="grande"></p><small></small><div class="botoes"><button class="leve"></button></div>'
+  if (i && vo) {
+    valorGrande(total.querySelector('.grande'), i.preco + vo.preco)
+    total.querySelector('small').textContent = `ida ${brl(i.preco)} na ${i.cia} + volta ${brl(vo.preco)} na ${vo.cia}`
+  } else {
+    total.querySelector('.rotulo').textContent = 'Sem combinação'
+    total.querySelector('.grande').remove()
+    total.querySelector('small').textContent = 'Faltam voos de ida ou de volta nessas datas.'
+  }
+  // acompanhar a viagem buscada: vira a viagem deste aparelho
+  const acompanhar = total.querySelector('button')
+  const mesma = E?.rota && E.rota.chave === [v.origem, v.destino, v.ida, v.volta].join('-')
+  acompanhar.textContent = mesma ? 'Você já acompanha esta viagem' : 'Acompanhar esta viagem'
+  acompanhar.disabled = mesma
+  acompanhar.onclick = async () => {
+    acompanhar.disabled = true; acompanhar.textContent = 'Salvando…'
+    try {
+      mostrar(await api('/api/eu', { rota: v, ...(!E?.disp && { precoMax: Math.round((i && vo ? i.preco + vo.preco : 1000) * .9 / 10) * 10 }) }), { animar: true })
+      scrollTo({ top: 0, behavior: semMovimento() ? 'auto' : 'smooth' })
+    } catch (err) { acompanhar.disabled = false; acompanhar.textContent = semRede(err) }
   }
   $('b-trechos').replaceChildren(
-    trechoBusca('Ida', corpo.ida, corpo.origem, corpo.destino, res.ida),
-    trechoBusca('Volta', corpo.volta, corpo.destino, corpo.origem, res.volta))
-  $('b-res').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' })
+    trechoBusca('Ida', v.ida, v.origem, v.destino, res.ida),
+    trechoBusca('Volta', v.volta, v.destino, v.origem, res.volta))
+  $('b-res').scrollIntoView({ behavior: semMovimento() ? 'auto' : 'smooth', block: 'start' })
 }
 
 function trechoBusca(nome, data, de, para, r) {
@@ -710,56 +876,19 @@ function trechoBusca(nome, data, de, para, r) {
   return div
 }
 
-// o workflow roda todo dia às 12h UTC
-function rodape() {
-  const prox = new Date(); prox.setUTCHours(12, 0, 0, 0)
-  if (prox <= Date.now()) prox.setUTCDate(prox.getUTCDate() + 1)
-  const qdo = prox.toDateString() === new Date().toDateString() ? 'hoje' : 'amanhã'
-  $('rodape').textContent = `Os preços vêm do Google Flights uma vez por dia, ou quando você toca em Buscar agora. Próxima busca automática ${qdo} por volta das ${prox.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`
-}
-
-function topo() {
-  new IntersectionObserver(([e]) => $('topo').classList.toggle('rolou', !e.isIntersecting), { rootMargin: '-60px 0px 0px 0px' }).observe($('rota'))
-}
-
+// ---------- abertura ----------
+new IntersectionObserver(([e]) => $('topo').classList.toggle('rolou', !e.isIntersecting && !$('painel').hidden), { rootMargin: '-60px 0px 0px 0px' }).observe($('rota'))
 navigator.serviceWorker?.register('sw.js')
+$('b-origem').value = nomeAeroporto('BVB')
 
-Promise.all([get('config.json'), get('prices.json')]).then(([cfg, hist]) => {
-  $('o-cod').textContent = cfg.origem; $('o-nome').textContent = cfg.origemNome; $('o-data').textContent = 'ida ' + dia(cfg.ida)
-  $('d-cod').textContent = cfg.destino; $('d-nome').textContent = cfg.destinoNome
-  $('d-data').textContent = cfg.volta ? 'volta ' + dia(cfg.volta) : 'só ida'
-  const dias = Math.ceil((new Date(cfg.ida + 'T00:00') - Date.now()) / 864e5)
-  $('contagem').textContent = dias > 1 ? `daqui a ${dias} dias` : dias === 1 ? 'amanhã' : dias === 0 ? 'hoje' : ''
-
-  const ult = hist.at(-1)
-  $('t-rota').textContent = `${cfg.origem}⇄${cfg.destino}`
-  if (ult) {
-    $('preco').textContent = num(ult.price)
-    if (ult.ida) {
-      $('legenda').textContent = `ida ${brl(ult.ida.price)} na ${ult.ida.cia}`
-      if (ult.volta) $('legenda2').textContent = `volta ${brl(ult.volta.price)} na ${ult.volta.cia}`
-    } else $('legenda').textContent = (cfg.volta ? 'ida e volta' : 'só ida') + ', por pessoa' + (ult.cia ? ', na ' + ult.cia : '')
-    $('t-rota').appendChild(document.createElement('b')).textContent = brl(ult.price)
-    $('rota-desc').textContent = `${cfg.origemNome} para ${cfg.destinoNome}: ${brl(ult.price)}.`
-    const p = $('pulso').querySelector('span')
-    p.innerHTML = '<b></b> '
-    p.firstChild.textContent = hist.length === 1 ? '1 checagem' : `${hist.length} checagens`
-    p.append(`desde ${quando(hist[0].t).split(',')[0]}, a última ${ha(ult.t)}`)
-  } else {
-    $('rota-desc').textContent = `${cfg.origemNome} para ${cfg.destinoNome}, ainda sem preço.`
-    $('pulso').querySelector('span').textContent = 'Nenhuma checagem ainda'
-  }
-  voar()
-  topo()
-
-  resumo(cfg, hist)
-  historico(hist)
-  limite(cfg, hist)
-  buscar(hist)
-  busca(cfg)
-  avisos(cfg)
-  rodape()
-})
+api('/api/eu?id=' + ID)
+  .then(est => mostrar(est, { animar: true }))
+  .catch(err => {
+    $('inicio').hidden = false
+    $('form-viagem').hidden = true
+    $('inicio-titulo').textContent = 'Não deu pra carregar o app'
+    $('inicio').querySelector('p:not(.rotulo)').textContent = semRede(err)
+  })
 </script>
 </body>
 </html>

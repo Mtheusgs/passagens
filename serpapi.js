@@ -16,3 +16,10 @@ export async function soIda(de, para, data, chave) {
     }))
   return { voos, url: d.search_metadata?.google_flights_url, nivel: d.price_insights?.price_level, faixa: d.price_insights?.typical_price_range }
 }
+
+// Quantas buscas restam na conta e quando a cota renova. Essa consulta não gasta busca.
+export async function cota(chave) {
+  const d = await (await fetch('https://serpapi.com/account.json?api_key=' + chave)).json()
+  if (d.error) throw new Error(d.error)
+  return { restantes: d.total_searches_left ?? d.plan_searches_left ?? 0, renova: d.plan_renewal_date }
+}

@@ -1,3 +1,4 @@
 node_modules
 .env
 VAPID_PRIVATE.txt
+CRON_SECRET.txt
