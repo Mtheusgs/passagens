@@ -51,6 +51,8 @@
   .veredito .frase { font-weight: 600; font-size: 1.1rem; margin-top: 4px; }
   .veredito .sub { color: var(--apagado); margin-top: 10px; }
 
+  .buscar { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+  .buscar .msg { margin: 0; flex: 1; font-size: .9rem; line-height: 1.35; }
   section { margin-top: 48px; }
   h2 { font: 800 1.9rem/1 var(--display); margin: 0 0 16px; }
   .vazio { color: var(--apagado); }
@@ -139,6 +141,10 @@
     <h1 id="v-titulo">Carregando…</h1>
     <p class="frase" id="v-frase"></p>
     <p class="sub" id="v-sub"></p>
+    <div class="buscar">
+      <button class="leve" id="buscar">Buscar agora</button>
+      <p class="msg" id="buscar-msg" role="status"></p>
+    </div>
   </div>
 
   <section id="sec-grafico" hidden>
@@ -284,7 +290,7 @@ function resumo(cfg, hist) {
   if (!hist.length) {
     $('v-titulo').textContent = 'Nenhuma checagem ainda'
     $('v-frase').textContent = 'O primeiro preço aparece aqui depois da próxima busca.'
-    $('v-sub').textContent = 'Para buscar agora, rode o workflow "check" na aba Actions do GitHub.'
+    $('v-sub').textContent = 'Pra não esperar, toque em Buscar agora.'
     return
   }
   const agora = hist.at(-1).price, antes = hist.at(-2)?.price, min = Math.min(...hist.map(h => h.price))
@@ -389,11 +395,39 @@ function avisos(cfg) {
   }
 }
 
+// dispara a busca e espera o preço novo chegar (GitHub busca ~1 min, Vercel publica ~30 s)
+function buscar(hist) {
+  const btn = $('buscar'), msg = $('buscar-msg')
+  btn.onclick = async () => {
+    btn.disabled = true; msg.dataset.estado = ''; msg.textContent = 'Pedindo a busca…'
+    try {
+      const r = await fetch('/api/buscar', { method: 'POST' })
+      const d = await r.json().catch(() => ({ erro: `O servidor respondeu ${r.status}.` }))
+      if (!r.ok) throw new Error(d.erro)
+    } catch (err) {
+      btn.disabled = false; msg.dataset.estado = 'erro'
+      return msg.textContent = err.message === 'Failed to fetch' ? 'Sem conexão. Tente de novo.' : err.message
+    }
+    msg.textContent = 'Buscando no Google Flights. Leva uns 2 minutos, pode deixar o app aberto.'
+    const antes = hist.length, t0 = Date.now()
+    const esperar = async () => {
+      const novo = await get('prices.json').catch(() => hist)
+      if (novo.length > antes) return location.reload()
+      if (Date.now() - t0 > 5 * 60e3) {
+        btn.disabled = false
+        return msg.textContent = 'A busca está demorando mais que o normal. O preço novo aparece quando você abrir o app de novo.'
+      }
+      setTimeout(esperar, 10e3)
+    }
+    setTimeout(esperar, 30e3)
+  }
+}
+
 // o workflow roda às 0h, 8h e 16h UTC
 function rodape() {
   const prox = new Date(); prox.setUTCMinutes(0, 0, 0)
   do prox.setUTCHours(prox.getUTCHours() + 1); while (prox.getUTCHours() % 8)
-  $('rodape').textContent = `Os preços vêm do Google Flights a cada 8 horas. Próxima busca por volta das ${prox.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`
+  $('rodape').textContent = `Os preços vêm do Google Flights a cada 8 horas, ou quando você toca em Buscar agora. Próxima busca automática por volta das ${prox.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}.`
 }
 
 navigator.serviceWorker?.register('sw.js')
@@ -416,6 +450,7 @@ Promise.all([get('config.json'), get('prices.json')]).then(([cfg, hist]) => {
   resumo(cfg, hist)
   historico(hist)
   limite(cfg, hist)
+  buscar(hist)
   avisos(cfg)
   rodape()
 })
