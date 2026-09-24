@@ -12,5 +12,19 @@
   "price": 1344,
   "cia": "Gol",
   "url": "https://www.google.com/travel/flights?hl=pt&gl=br&curr=BRL&tfs=CBwQAhoeEgoyMDI3LTAyLTA3agcIARIDQlZCcgcIARIDQ05GGh4SCjIwMjctMDItMTRqBwgBEgNDTkZyBwgBEgNCVkJAAUgBcAGYAQE&tfu=EgIIAQ"
+ },
+ {
+  "t": "2026-09-24T17:31:26.365Z",
+  "price": 1495,
+  "ida": {
+   "price": 674,
+   "cia": "LATAM",
+   "url": "https://www.google.com/travel/flights?hl=pt&gl=br&curr=BRL&tfs=CBwQAhoeEgoyMDI3LTAyLTA3agcIARIDQlZCcgcIARIDQ05GQAFIAXABmAEC&tfu=EgIIAQ"
+  },
+  "volta": {
+   "price": 821,
+   "cia": "Gol",
+   "url": "https://www.google.com/travel/flights?hl=pt&gl=br&curr=BRL&tfs=CBwQAhoeEgoyMDI3LTAyLTE0agcIARIDQ05GcgcIARIDQlZCQAFIAXABmAEC&tfu=EgIIAQ"
+  }
  }
 ]
