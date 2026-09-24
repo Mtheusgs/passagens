@@ -70,7 +70,7 @@ O rodapé do app mostra a frequência atual e quantas buscas restam. Com um plan
 | `sw.js` | Service worker: recebe o push e mostra a notificação |
 | `manifest.json`, `icon*.png`, `icon.svg`, `apple-touch-icon.png` | O que faz o site virar um app instalável |
 | `dados.js` | Banco (Redis), aparelhos, viagens, cálculo da cota, checagem e avisos |
-| `serpapi.js` | Busca de um trecho só de ida e consulta da cota na SerpApi |
+| `serpapi.js` | Busca de um trecho só de ida e consulta da cota na SerpApi. Usa `deep_search`: sem ele, a SerpApi devolve preços de cache que podem ficar bem abaixo do que o Google Flights mostra (numa comparação, R$ 620 contra R$ 814 reais) |
 | `api/eu.js` | Lê (`GET ?id=`) e muda (`POST`) a viagem, o limite e os avisos do aparelho |
 | `api/buscar.js` | Buscar agora |
 | `api/voos.js` | Busca avulsa |

@@ -1,7 +1,8 @@
 // Busca só de ida no Google Flights (via SerpApi). Voos simplificados, do mais barato pro mais caro.
 export async function soIda(de, para, data, chave) {
+  // deep_search: sem ele a SerpApi devolve preços de cache, às vezes bem abaixo do que o Google Flights mostra de verdade
   const q = new URLSearchParams({ engine: 'google_flights', departure_id: de, arrival_id: para, outbound_date: data,
-    type: '2', currency: 'BRL', hl: 'pt', gl: 'br', api_key: chave })
+    type: '2', currency: 'BRL', hl: 'pt', gl: 'br', deep_search: 'true', api_key: chave })
   const d = await (await fetch('https://serpapi.com/search.json?' + q)).json()
   if (d.error && !/returned any results|no results/i.test(d.error)) throw new Error(d.error)
   const voos = [...(d.best_flights ?? []), ...(d.other_flights ?? [])].filter(v => v.price)
