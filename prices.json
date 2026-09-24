@@ -6,5 +6,11 @@
  {
   "t": "2026-09-24T15:40:34.930Z",
   "price": 1344
+ },
+ {
+  "t": "2026-09-24T15:45:52.601Z",
+  "price": 1344,
+  "cia": "Gol",
+  "url": "https://www.google.com/travel/flights?hl=pt&gl=br&curr=BRL&tfs=CBwQAhoeEgoyMDI3LTAyLTA3agcIARIDQlZCcgcIARIDQ05GGh4SCjIwMjctMDItMTRqBwgBEgNDTkZyBwgBEgNCVkJAAUgBcAGYAQE&tfu=EgIIAQ"
  }
 ]

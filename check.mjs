@@ -12,22 +12,25 @@ const q = new URLSearchParams({
 const d = await (await fetch('https://serpapi.com/search.json?' + q)).json()
 if (d.error) throw new Error(d.error)
 
-const prices = [...(d.best_flights ?? []), ...(d.other_flights ?? [])].map(f => f.price).filter(Boolean)
-if (!prices.length) { console.log('nenhum voo encontrado'); process.exit(0) }
-const price = Math.min(...prices)
+const voos = [...(d.best_flights ?? []), ...(d.other_flights ?? [])].filter(f => f.price)
+if (!voos.length) { console.log('nenhum voo encontrado'); process.exit(0) }
+const melhor = voos.reduce((a, b) => b.price < a.price ? b : a)
+const price = melhor.price
+const cia = [...new Set(melhor.flights.map(f => f.airline))].join(' + ')
+const url = d.search_metadata?.google_flights_url ??
+  `https://www.google.com/travel/flights?q=Flights+to+${cfg.destino}+from+${cfg.origem}+on+${cfg.ida}` + (cfg.volta ? `+returning+${cfg.volta}` : '')
 const last = hist.at(-1)?.price
-hist.push({ t: new Date().toISOString(), price })
+hist.push({ t: new Date().toISOString(), price, cia, url })
 fs.writeFileSync('prices.json', JSON.stringify(hist, null, 1))
-console.log(`${cfg.origem}→${cfg.destino}: R$ ${price} (anterior: ${last ?? '-'})`)
+console.log(`${cfg.origem}→${cfg.destino}: R$ ${price} com ${cia} (anterior: ${last ?? '-'})`)
 
 // só avisa se está abaixo do limite E caiu desde a última checagem (evita spam a cada 8h)
 if (price <= cfg.precoMax && price < (last ?? Infinity) && process.env.PUSH_SUB) {
   webpush.setVapidDetails(process.env.VAPID_SUBJECT, cfg.vapidPublicKey, process.env.VAPID_PRIVATE)
   await webpush.sendNotification(JSON.parse(process.env.PUSH_SUB), JSON.stringify({
     title: `✈️ ${cfg.origem}→${cfg.destino} por R$ ${price}`,
-    body: last ? `Caiu de R$ ${last}` : `Abaixo do seu limite de R$ ${cfg.precoMax}`,
-    url: `https://www.google.com/travel/flights?q=Flights+to+${cfg.destino}+from+${cfg.origem}+on+${cfg.ida}` +
-      (cfg.volta ? `+returning+${cfg.volta}` : ''),
+    body: (last ? `Caiu de R$ ${last}` : `Abaixo do seu limite de R$ ${cfg.precoMax}`) + `, com ${cia}.`,
+    url,
   }))
   console.log('push enviado')
 }
